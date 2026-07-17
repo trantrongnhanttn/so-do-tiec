@@ -683,8 +683,37 @@ async function pullFromGitHub(silent){
 document.getElementById('btnPush').addEventListener('click', pushToGitHub);
 document.getElementById('btnPull').addEventListener('click', () => pullFromGitHub(false));
 
-/* mở trang: nếu đã cấu hình GitHub thì tự tải dữ liệu mới nhất */
-if(ghReady()) pullFromGitHub(true);
+/* ---- tự nạp dữ liệu cho MỌI người xem, không cần token ----
+   data.json nằm cùng repo với index.html nên GitHub Pages phục vụ nó
+   ngay cạnh trang web -> chỉ cần fetch tương đối. */
+function applyPayload(obj){
+  const incoming = obj && obj.data ? obj.data : obj;
+  if(typeof incoming !== 'object' || incoming === null) return false;
+  data = incoming;
+  if(obj.event_date){
+    fDate.value = obj.event_date;
+    try{ localStorage.setItem(KEY_DATE, obj.event_date); }catch(e){}
+  }
+  persist();
+  ROWS.forEach(r => { for(let c = 1; c <= COLS; c++) renderCell(r.name + c); });
+  renderSummary();
+  return true;
+}
+
+async function autoLoad(){
+  /* 1) thử đọc data.json công khai cạnh trang (không cần token) */
+  try{
+    const res = await fetch('data.json?t=' + Date.now(), {cache:'no-store'});
+    if(res.ok){
+      const obj = await res.json();
+      if(applyPayload(obj)) return;
+    }
+  }catch(e){ /* mở file cục bộ hoặc chưa có data.json -> thử cách khác */ }
+  /* 2) nếu máy này đã cấu hình token thì đọc qua API (mới nhất, không bị cache) */
+  if(ghReady()) pullFromGitHub(true);
+  /* 3) không thì giữ dữ liệu localStorage đã nạp sẵn */
+}
+autoLoad();
 
 /* ---- khởi tạo ---- */
 ROWS.forEach(r => { for(let c = 1; c <= COLS; c++) renderCell(r.name + c); });
