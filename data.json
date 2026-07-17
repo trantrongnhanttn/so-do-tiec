@@ -1,34 +1,587 @@
 {
   "app": "so_do_bien_dem",
   "version": 2,
-  "saved_at": "2026-07-17T04:56:05.831Z",
+  "saved_at": "2026-07-17T05:02:11.102Z",
   "event_date": "2026-07-24",
   "data": {
+    "B28": {
+      "people": 3,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "E5": {
+      "people": 5,
+      "tables": 2,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "E4": {
+      "people": 5,
+      "tables": 2,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "E12": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "C6": {
+      "people": 1,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 4,
+      "squid": 1
+    },
+    "E6": {
+      "people": 4,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 2,
+      "squid": 2
+    },
+    "B27": {
+      "people": 1,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "C9": {
+      "people": 3,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "B26": {
+      "people": 1,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "B1": {
+      "people": 4,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "B2": {
+      "people": 5,
+      "tables": 2,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 1
+    },
+    "B3": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 1,
+      "squid": 1
+    },
+    "B4": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 1
+    },
+    "D15": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "E19": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "C20": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "E1": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "C15": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "C10": {
+      "people": 4,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "B6": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "C19": {
+      "people": 1,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "B25": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 1
+    },
+    "B7": {
+      "people": 4,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "B22": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "C16": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "B23": {
+      "people": 5,
+      "tables": 2,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 1
+    },
+    "B21": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 2,
+      "squid": 1
+    },
+    "C17": {
+      "people": 3,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "B8": {
+      "people": 4,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "B24": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 1
+    },
+    "C8": {
+      "people": 7,
+      "tables": 2,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "E18": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 1
+    },
+    "B10": {
+      "people": 1,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "E17": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
     "A1": {
       "people": 2,
       "tables": 1,
-      "stoves": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "A29": {
+      "people": 1,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "B20": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 1
+    },
+    "B5": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "B11": {
+      "people": 6,
+      "tables": 2,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 3
+    },
+    "A30": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "B19": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 2,
+      "squid": 2
+    },
+    "C14": {
+      "people": 4,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "B13": {
+      "people": 4,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "B18": {
+      "people": 1,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "B17": {
+      "people": 1,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "A28": {
+      "people": 1,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "A27": {
+      "people": 1,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "E22": {
+      "people": 3,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "B14": {
+      "people": 1,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 2
+    },
+    "E11": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
       "beer": 0,
       "squid": 0
     },
     "A2": {
       "people": 2,
       "tables": 1,
-      "stoves": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "E14": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
       "beer": 0,
       "squid": 0
     },
     "A3": {
+      "people": 6,
+      "tables": 2,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "A26": {
+      "people": 3,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 1,
+      "squid": 1
+    },
+    "E8": {
       "people": 2,
       "tables": 1,
-      "stoves": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "A6": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 1
+    },
+    "A25": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "B12": {
+      "people": 6,
+      "tables": 2,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "A5": {
+      "people": 1,
+      "tables": 1,
+      "stoves": 0,
       "beer": 0,
       "squid": 0
     },
     "A4": {
+      "people": 3,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "A24": {
+      "people": 4,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 1
+    },
+    "A23": {
+      "people": 4,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "E15": {
+      "people": 3,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 1
+    },
+    "B16": {
       "people": 2,
       "tables": 1,
-      "stoves": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "A22": {
+      "people": 3,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 1
+    },
+    "B15": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "A21": {
+      "people": 3,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 2,
+      "squid": 1
+    },
+    "B9": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 1
+    },
+    "E16": {
+      "people": 4,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "A20": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "A7": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "A9": {
+      "people": 4,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "A10": {
+      "people": 6,
+      "tables": 2,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "A8": {
+      "people": 4,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "A11": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "A14": {
+      "people": 3,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "A15": {
+      "people": 3,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "A12": {
+      "people": 3,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "A19": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "A13": {
+      "people": 3,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "A18": {
+      "people": 3,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "A17": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
+      "beer": 0,
+      "squid": 0
+    },
+    "A16": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 0,
       "beer": 0,
       "squid": 0
     }
