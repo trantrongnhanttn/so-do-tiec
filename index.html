@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sơ đồ Dạ Tiệc Ánh Sáng Biển Đêm</title>
+<style>
+  :root{
+    --navy:#0a1a3a; --navy2:#13294f;
+    --amber:#3a2f1c; --amber2:#5a4326;
+    --gold:#E9C46A; --coral:#E07A5F; --leaf:#A9D08E;
+    --red1:#a8341f; --red2:#6e1f12;
+    --green1:#4a6b2a; --green2:#2f471a;
+    --ink:#fbf3df; --muted:#c9c0aa;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:"Segoe UI", Arial, "Helvetica Neue", sans-serif;
+    background:linear-gradient(180deg, var(--navy) 0%, var(--navy2) 30%, var(--amber) 60%, var(--amber2) 85%, #1c1408 100%);
+    background-attachment:fixed;
+    color:var(--ink);
+    min-height:100vh;
+    display:flex; flex-direction:column;
+  }
+
+  /* ===== Thanh đầu trang ===== */
+  header{
+    display:flex; flex-wrap:wrap; align-items:center; gap:12px;
+    padding:14px 20px;
+  }
+  header h1{
+    font-size:clamp(15px, 2vw, 24px);
+    letter-spacing:1px; color:var(--gold); font-weight:800;
+    text-transform:uppercase;
+  }
+  .legend{display:flex; gap:14px; font-size:13px; color:var(--muted); align-items:center;}
+  .legend .chip{display:inline-block; width:14px; height:14px; border-radius:4px; vertical-align:-2px; margin-right:5px;}
+  .chip.r{background:linear-gradient(180deg,var(--red1),var(--red2));}
+  .chip.g{background:linear-gradient(180deg,var(--green1),var(--green2));}
+  .spacer{flex:1;}
+  button{
+    font:inherit; cursor:pointer; border:none; border-radius:8px;
+    padding:9px 14px; font-weight:700;
+  }
+  .btn-print{background:var(--gold); color:#2a1c08;}
+  .btn-print:hover{filter:brightness(1.08);}
+  .btn-ghost{background:transparent; color:var(--muted); border:1px solid #6b5c3a;}
+  .btn-ghost:hover{color:var(--ink); border-color:var(--gold);}
+  .datebox{display:flex; align-items:center; gap:7px; font-size:13px; color:var(--muted);}
+  .datebox input[type=date]{
+    font:inherit; padding:7px 10px; border-radius:8px;
+    border:1px solid #6b5c3a; background:#12162a; color:var(--gold);
+    font-weight:700; cursor:pointer;
+  }
+  .datebox input[type=date]:focus{outline:none; border-color:var(--gold);}
+  .datebox input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.8) sepia(.6);}
+
+  /* ===== Thanh tổng kết ===== */
+  .summary{
+    display:flex; flex-wrap:wrap; gap:8px 24px;
+    padding:0 20px 12px; font-size:14px; color:var(--muted);
+  }
+  .summary b{color:var(--gold); font-size:17px;}
+
+  /* ===== Lưới bàn ===== */
+  main{flex:1; overflow:auto; padding:0 12px 20px;}
+  .grid{
+    display:grid;
+    grid-template-columns:34px repeat(30, minmax(52px, 1fr));
+    gap:7px;
+    min-width:1500px;
+  }
+  .rowlabel{
+    display:flex; align-items:center; justify-content:center;
+    font-size:23px; font-weight:800;
+  }
+  .rowlabel.r{color:var(--coral);} .rowlabel.g{color:var(--leaf);}
+  .groupgap{height:18px; grid-column:1 / -1;}
+
+  .cell{
+    position:relative; border-radius:7px; min-height:76px;
+    border:1.5px solid #2a1c10;
+    padding:17px 3px 4px;
+    cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    transition:transform .08s ease, box-shadow .08s ease;
+    color:var(--ink); font:inherit;
+  }
+  .cell.r{background:linear-gradient(180deg,var(--red1),var(--red2));}
+  .cell.g{background:linear-gradient(180deg,var(--green1),var(--green2));}
+  .cell:hover{transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,.5); border-color:var(--gold);}
+  .cell:focus-visible{outline:2px solid var(--gold); outline-offset:2px;}
+  .cell .num{
+    position:absolute; top:3px; left:6px;
+    font-size:11px; font-weight:700; opacity:.85;
+  }
+  .cell .people{font-size:18px; font-weight:800; line-height:1;}
+  .cell .people small{font-size:10px; font-weight:400; opacity:.8;}
+  .cell .extra{
+    font-size:10.5px; line-height:1.25; opacity:.95; text-align:center;
+    white-space:normal; word-break:keep-all;
+  }
+  .cell.booked{border-color:var(--gold); box-shadow:inset 0 0 0 1px rgba(233,196,106,.4);}
+
+  /* ===== Hộp thoại ghi chú ===== */
+  dialog{
+    border:1px solid var(--gold); border-radius:12px;
+    background:#1d2233; color:var(--ink);
+    padding:22px 24px; width:min(92vw, 380px);
+  }
+  dialog::backdrop{background:rgba(0,0,0,.6);}
+  dialog h2{font-size:18px; color:var(--gold); margin-bottom:3px;}
+  dialog .price{font-size:12px; color:var(--muted); margin-bottom:12px;}
+  .fieldrow{display:flex; gap:12px;}
+  .fieldrow > div{flex:1;}
+  dialog label{display:block; font-size:12.5px; color:var(--muted); margin:10px 0 4px;}
+  dialog input[type=number]{
+    width:100%; padding:8px 10px; border-radius:7px;
+    border:1px solid #4a4a5a; background:#12162a; color:var(--ink);
+    font:inherit;
+  }
+  dialog input:focus{outline:none; border-color:var(--gold);}
+  .hint{font-size:11px; color:#8f866f; margin-top:3px;}
+  .sect{margin-top:14px; padding-top:10px; border-top:1px dashed #4a4a5a;
+    font-size:12.5px; color:var(--gold); font-weight:700; letter-spacing:.5px;}
+  .dlg-actions{display:flex; gap:8px; margin-top:18px;}
+  .dlg-actions .btn-print{flex:1;}
+  .btn-danger{background:transparent; color:#e58a7a; border:1px solid #7a3a2c;}
+  .btn-danger:hover{background:#3a1810;}
+
+  /* ===== In ấn: bố cục riêng cho A4 ngang, máy in đen trắng ===== */
+  #printArea{display:none;}
+
+  @media print{
+    @page{size:A4 landscape; margin:7mm;}
+    body{background:#fff !important; color:#000; display:block;}
+    header, .summary, main, dialog{display:none !important;}
+    #printArea{display:block; font-family:Arial, "Segoe UI", sans-serif; color:#000;}
+
+    .p-head{display:flex; align-items:baseline; gap:14px; margin-bottom:2mm;}
+    .p-head h1{font-size:13pt; letter-spacing:.5px; text-transform:uppercase;}
+    .p-head .p-legend{font-size:8pt; color:#333;}
+    .p-summary{font-size:9pt; margin-bottom:2.5mm;}
+    .p-summary b{font-size:10pt;}
+
+    .p-block{margin-bottom:3mm;}
+    .p-block-title{font-size:8.5pt; font-weight:700; color:#333; margin-bottom:1mm;
+      text-transform:uppercase; letter-spacing:.5px;}
+    .p-grid{
+      display:grid;
+      grid-template-columns:7mm repeat(15, 1fr);
+      gap:1mm;
+    }
+    .p-rowlabel{
+      display:flex; align-items:center; justify-content:center;
+      font-size:12pt; font-weight:800;
+    }
+    .p-cell{
+      border:0.4mm solid #000; border-radius:1mm;
+      min-height:12.5mm; padding:0.6mm 1mm;
+      position:relative; overflow:hidden;
+      -webkit-print-color-adjust:exact; print-color-adjust:exact;
+      display:flex; flex-direction:column; justify-content:center; gap:0;
+    }
+    /* Phân biệt khu vực trên máy in đen trắng:
+       A–D (bếp nướng) nền trắng viền đậm · E–F nền xám nhạt viền mảnh */
+    .p-cell.g{background:#e6e6e6; border-width:0.25mm;}
+    .p-cell .p-num{
+      position:absolute; top:0.4mm; left:0.9mm;
+      font-size:6.5pt; font-weight:700; color:#000;
+    }
+    .p-cell .p-people{font-size:9pt; font-weight:800; text-align:center; line-height:1.05;}
+    .p-cell .p-extra{font-size:6.5pt; text-align:center; line-height:1.15; color:#111;}
+    .p-cell.empty .p-num{color:#777; font-weight:400;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Sơ đồ Dạ Tiệc Ánh Sáng Biển Đêm</h1>
+  <div class="legend">
+    <span><span class="chip r"></span>A–D: 199K/người (có bếp nướng)</span>
+    <span><span class="chip g"></span>E–F: 129K/người (không bếp nướng)</span>
+  </div>
+  <div class="spacer"></div>
+  <label class="datebox">Ngày tiệc
+    <input type="date" id="fDate" title="Chọn ngày của sơ đồ này">
+  </label>
+  <button class="btn-ghost" id="btnExport">💾 Lưu file JSON</button>
+  <button class="btn-ghost" id="btnImport">📂 Mở file JSON</button>
+  <input type="file" id="fileImport" accept=".json,application/json" hidden>
+  <button class="btn-ghost" id="btnClear">Xóa tất cả</button>
+  <button class="btn-print" id="btnPrint">🖨 In sơ đồ</button>
+</header>
+
+<div class="summary" id="summary"></div>
+
+<main><div class="grid" id="grid"></div></main>
+
+<div id="printArea"></div>
+
+<dialog id="dlg">
+  <h2 id="dlgTitle">Vị trí A1</h2>
+  <div class="price" id="dlgPrice"></div>
+
+  <div class="fieldrow">
+    <div>
+      <label for="fPeople">Số người</label>
+      <input type="number" id="fPeople" min="0" max="99" step="1" placeholder="0">
+    </div>
+    <div>
+      <label for="fTables">Số bàn</label>
+      <input type="number" id="fTables" min="0" max="99" step="1" placeholder="0">
+      <div class="hint">Tự tính theo số người, sửa được</div>
+    </div>
+  </div>
+
+  <div class="fieldrow">
+    <div>
+      <label for="fStoves">Số bếp</label>
+      <input type="number" id="fStoves" min="0" max="99" step="1" placeholder="0">
+    </div>
+    <div></div>
+  </div>
+
+  <div class="sect">Đồ ăn thêm</div>
+  <div class="fieldrow">
+    <div>
+      <label for="fBeer">Bia (lon)</label>
+      <input type="number" id="fBeer" min="0" max="999" step="1" placeholder="0">
+    </div>
+    <div>
+      <label for="fSquid">Mực (set)</label>
+      <input type="number" id="fSquid" min="0" max="999" step="1" placeholder="0">
+    </div>
+  </div>
+
+  <div class="dlg-actions">
+    <button class="btn-print" id="btnSave">Lưu</button>
+    <button class="btn-danger" id="btnDelete">Xóa bàn</button>
+    <button class="btn-ghost" id="btnClose">Đóng</button>
+  </div>
+</dialog>
+
+<script>
+const ROWS = [
+  {name:'A', cls:'r', desc:'199K/người · có bếp nướng'},
+  {name:'B', cls:'r', desc:'199K/người · có bếp nướng'},
+  {name:'C', cls:'r', desc:'199K/người · có bếp nướng'},
+  {name:'D', cls:'r', desc:'199K/người · có bếp nướng'},
+  {name:'E', cls:'g', desc:'129K/người · không bếp nướng'},
+  {name:'F', cls:'g', desc:'129K/người · không bếp nướng'},
+];
+const COLS = 30;
+const KEY = 'seatmap_bien_dem_v2';
+const KEY_DATE = 'seatmap_bien_dem_date';
+
+/* dữ liệu: { "A1": {people, tables, stoves, beer, squid} } */
+let data = {};
+try{
+  const saved = localStorage.getItem(KEY);
+  if(saved) data = JSON.parse(saved) || {};
+}catch(e){}
+
+/* ---- ngày tiệc ---- */
+const fDate = document.getElementById('fDate');
+try{
+  const savedDate = localStorage.getItem(KEY_DATE);
+  if(savedDate) fDate.value = savedDate;
+}catch(e){}
+fDate.addEventListener('change', () => {
+  try{ localStorage.setItem(KEY_DATE, fDate.value); }catch(e){}
+});
+function displayDate(){
+  if(!fDate.value) return '';
+  const [y, m, d] = fDate.value.split('-');
+  return d + '/' + m + '/' + y;
+}
+
+function persist(){
+  try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch(e){}
+}
+
+/* 2-3 người: 1 bàn · 5-7 người: 2 bàn · 8-10 người: 3 bàn */
+function suggestTables(p){
+  if(!p || p <= 0) return 0;
+  if(p <= 4) return 1;
+  if(p <= 7) return 2;
+  if(p <= 10) return 3;
+  return Math.ceil(p / 3.5);
+}
+
+/* ---- dựng lưới ---- */
+const grid = document.getElementById('grid');
+ROWS.forEach(row => {
+  if(row.name === 'E'){
+    const gap = document.createElement('div');
+    gap.className = 'groupgap';
+    grid.appendChild(gap);
+  }
+  const lbl = document.createElement('div');
+  lbl.className = 'rowlabel ' + row.cls;
+  lbl.textContent = row.name;
+  grid.appendChild(lbl);
+  for(let c = 1; c <= COLS; c++){
+    const id = row.name + c;
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'cell ' + row.cls;
+    cell.id = 'cell-' + id;
+    cell.innerHTML =
+      '<span class="num">' + c + '</span>' +
+      '<span class="people"></span>' +
+      '<span class="extra"></span>';
+    cell.addEventListener('click', () => openDialog(id, row));
+    grid.appendChild(cell);
+  }
+});
+
+function isBooked(d){
+  return d && (d.people || d.tables || d.stoves || d.beer || d.squid);
+}
+
+/* ---- vẽ lại 1 ô ---- */
+function renderCell(id){
+  const cell = document.getElementById('cell-' + id);
+  const d = data[id];
+  cell.classList.toggle('booked', !!isBooked(d));
+  const people = cell.querySelector('.people');
+  const extra = cell.querySelector('.extra');
+  if(isBooked(d)){
+    people.innerHTML = d.people ? d.people + '<small> người</small>' : '';
+    const bits = [];
+    if(d.tables) bits.push(d.tables + ' bàn');
+    if(d.stoves) bits.push(d.stoves + ' bếp');
+    if(d.beer)   bits.push(d.beer + '🍺');
+    if(d.squid)  bits.push(d.squid + '🦑');
+    extra.textContent = bits.join(' · ');
+  }else{
+    people.innerHTML = '';
+    extra.textContent = '';
+  }
+}
+
+/* ---- tổng kết ---- */
+function renderSummary(){
+  let spots = 0, people = 0, tables = 0, stoves = 0, beer = 0, squid = 0;
+  ROWS.forEach(row => {
+    for(let c = 1; c <= COLS; c++){
+      const d = data[row.name + c];
+      if(isBooked(d)){
+        spots++;
+        people += d.people || 0;
+        tables += d.tables || 0;
+        stoves += d.stoves || 0;
+        beer   += d.beer   || 0;
+        squid  += d.squid  || 0;
+      }
+    }
+  });
+  document.getElementById('summary').innerHTML =
+    'Vị trí đã đặt: <b>' + spots + '</b>/' + (ROWS.length * COLS) + ' &nbsp;·&nbsp; ' +
+    'Tổng số người: <b>' + people + '</b> &nbsp;·&nbsp; ' +
+    'Tổng số bàn: <b>' + tables + '</b> &nbsp;·&nbsp; ' +
+    'Tổng số bếp: <b>' + stoves + '</b> &nbsp;·&nbsp; ' +
+    'Bia: <b>' + beer + '</b> lon &nbsp;·&nbsp; ' +
+    'Mực: <b>' + squid + '</b> set';
+}
+
+/* ---- hộp thoại ---- */
+const dlg = document.getElementById('dlg');
+const fPeople = document.getElementById('fPeople');
+const fTables = document.getElementById('fTables');
+const fStoves = document.getElementById('fStoves');
+const fBeer   = document.getElementById('fBeer');
+const fSquid  = document.getElementById('fSquid');
+let currentId = null;
+let tablesEdited = false;
+
+function openDialog(id, row){
+  currentId = id;
+  tablesEdited = false;
+  const d = data[id] || {};
+  document.getElementById('dlgTitle').textContent = 'Vị trí ' + id;
+  document.getElementById('dlgPrice').textContent = row.desc;
+  fPeople.value = d.people || '';
+  fTables.value = d.tables || '';
+  fStoves.value = d.stoves || '';
+  fBeer.value   = d.beer   || '';
+  fSquid.value  = d.squid  || '';
+  dlg.showModal();
+  fPeople.focus(); fPeople.select();
+}
+
+/* số người thay đổi -> gợi ý số bàn (trừ khi người dùng đã tự sửa) */
+fPeople.addEventListener('input', () => {
+  if(tablesEdited) return;
+  const p = parseInt(fPeople.value, 10) || 0;
+  fTables.value = suggestTables(p) || '';
+});
+fTables.addEventListener('input', () => { tablesEdited = true; });
+
+function num(el, max){
+  let v = parseInt(el.value, 10);
+  if(isNaN(v) || v < 0) v = 0;
+  if(v > max) v = max;
+  return v;
+}
+
+document.getElementById('btnSave').addEventListener('click', () => {
+  const d = {
+    people:num(fPeople, 99), tables:num(fTables, 99), stoves:num(fStoves, 99),
+    beer:num(fBeer, 999), squid:num(fSquid, 999)
+  };
+  if(isBooked(d)) data[currentId] = d; else delete data[currentId];
+  persist(); renderCell(currentId); renderSummary(); dlg.close();
+});
+document.getElementById('btnDelete').addEventListener('click', () => {
+  delete data[currentId];
+  persist(); renderCell(currentId); renderSummary(); dlg.close();
+});
+document.getElementById('btnClose').addEventListener('click', () => dlg.close());
+dlg.addEventListener('keydown', e => {
+  if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('btnSave').click(); }
+});
+
+/* ---- lưu / mở file JSON ---- */
+document.getElementById('btnExport').addEventListener('click', () => {
+  const payload = {app:'so_do_bien_dem', version:2, saved_at:new Date().toISOString(),
+    event_date:fDate.value || '', data:data};
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  let stamp = fDate.value;
+  if(!stamp){
+    const d = new Date();
+    stamp = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  a.href = URL.createObjectURL(blob);
+  a.download = 'so_do_ban_tiec_' + stamp + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+document.getElementById('btnImport').addEventListener('click', () => {
+  document.getElementById('fileImport').click();
+});
+document.getElementById('fileImport').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const obj = JSON.parse(reader.result);
+      const incoming = obj && obj.data ? obj.data : obj; /* chấp nhận cả file chỉ chứa data */
+      if(typeof incoming !== 'object' || incoming === null) throw new Error('sai định dạng');
+      data = incoming;
+      if(obj && obj.event_date){
+        fDate.value = obj.event_date;
+        try{ localStorage.setItem(KEY_DATE, obj.event_date); }catch(e2){}
+      }
+      persist();
+      ROWS.forEach(r => { for(let c = 1; c <= COLS; c++) renderCell(r.name + c); });
+      renderSummary();
+      alert('Đã nạp dữ liệu từ file: ' + file.name);
+    }catch(err){
+      alert('File không đúng định dạng JSON của sơ đồ này.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+/* ---- bố cục in: chia 30 cột thành 2 khối 15 cột ---- */
+function buildPrintArea(){
+  const area = document.getElementById('printArea');
+  let spots = 0, people = 0, tables = 0, stoves = 0, beer = 0, squid = 0;
+  ROWS.forEach(row => {
+    for(let c = 1; c <= COLS; c++){
+      const d = data[row.name + c];
+      if(isBooked(d)){
+        spots++; people += d.people||0; tables += d.tables||0;
+        stoves += d.stoves||0; beer += d.beer||0; squid += d.squid||0;
+      }
+    }
+  });
+
+  function block(from, to){
+    let h = '<div class="p-block">' +
+      '<div class="p-block-title">Vị trí ' + from + ' – ' + to + '</div>' +
+      '<div class="p-grid">';
+    ROWS.forEach(row => {
+      h += '<div class="p-rowlabel">' + row.name + '</div>';
+      for(let c = from; c <= to; c++){
+        const d = data[row.name + c];
+        const booked = isBooked(d);
+        h += '<div class="p-cell ' + row.cls + (booked ? '' : ' empty') + '">' +
+             '<span class="p-num">' + c + '</span>';
+        if(booked){
+          if(d.people) h += '<span class="p-people">' + d.people + ' người</span>';
+          const l1 = [], l2 = [];
+          if(d.tables) l1.push(d.tables + ' bàn');
+          if(d.stoves) l1.push(d.stoves + ' bếp');
+          if(d.beer)   l2.push(d.beer + ' bia');
+          if(d.squid)  l2.push(d.squid + ' mực');
+          if(l1.length) h += '<span class="p-extra">' + l1.join(' · ') + '</span>';
+          if(l2.length) h += '<span class="p-extra">' + l2.join(' · ') + '</span>';
+        }
+        h += '</div>';
+      }
+    });
+    return h + '</div></div>';
+  }
+
+  area.innerHTML =
+    '<div class="p-head">' +
+      '<h1>Sơ đồ Dạ Tiệc Ánh Sáng Biển Đêm' +
+        (displayDate() ? ' — Ngày ' + displayDate() : '') + '</h1>' +
+      '<span class="p-legend">A–D: 199K/người, có bếp nướng (ô trắng, viền đậm) &nbsp;·&nbsp; ' +
+      'E–F: 129K/người, không bếp nướng (ô xám)</span>' +
+    '</div>' +
+    '<div class="p-summary">' +
+      'Đã đặt: <b>' + spots + '</b>/' + (ROWS.length * COLS) +
+      ' &nbsp;·&nbsp; Người: <b>' + people + '</b>' +
+      ' &nbsp;·&nbsp; Bàn: <b>' + tables + '</b>' +
+      ' &nbsp;·&nbsp; Bếp: <b>' + stoves + '</b>' +
+      ' &nbsp;·&nbsp; Bia: <b>' + beer + '</b> lon' +
+      ' &nbsp;·&nbsp; Mực: <b>' + squid + '</b> set' +
+    '</div>' +
+    block(1, 15) + block(16, 30);
+}
+
+/* ---- nút chung ---- */
+window.addEventListener('beforeprint', buildPrintArea);
+document.getElementById('btnPrint').addEventListener('click', () => {
+  buildPrintArea();
+  window.print();
+});
+document.getElementById('btnClear').addEventListener('click', () => {
+  if(confirm('Xóa toàn bộ dữ liệu trên tất cả các vị trí?')){
+    data = {}; persist();
+    ROWS.forEach(r => { for(let c = 1; c <= COLS; c++) renderCell(r.name + c); });
+    renderSummary();
+  }
+});
+
+/* ---- khởi tạo ---- */
+ROWS.forEach(r => { for(let c = 1; c <= COLS; c++) renderCell(r.name + c); });
+renderSummary();
+</script>
+</body>
+</html>
