@@ -115,7 +115,7 @@
   .fieldrow{display:flex; gap:12px;}
   .fieldrow > div{flex:1;}
   dialog label{display:block; font-size:12.5px; color:var(--muted); margin:10px 0 4px;}
-  dialog input[type=number]{
+  dialog input[type=number], dialog input[type=text], dialog input[type=password]{
     width:100%; padding:8px 10px; border-radius:7px;
     border:1px solid #4a4a5a; background:#12162a; color:var(--ink);
     font:inherit;
@@ -188,6 +188,7 @@
   <label class="datebox">Ngày tiệc
     <input type="date" id="fDate" title="Chọn ngày của sơ đồ này">
   </label>
+  <button class="btn-ghost" id="btnSync">☁ GitHub</button>
   <button class="btn-ghost" id="btnExport">💾 Lưu file JSON</button>
   <button class="btn-ghost" id="btnImport">📂 Mở file JSON</button>
   <input type="file" id="fileImport" accept=".json,application/json" hidden>
@@ -242,6 +243,32 @@
     <button class="btn-danger" id="btnDelete">Xóa bàn</button>
     <button class="btn-ghost" id="btnClose">Đóng</button>
   </div>
+</dialog>
+
+<dialog id="dlgSync">
+  <h2>☁ Đồng bộ qua GitHub</h2>
+  <div class="price">Dữ liệu được lưu vào file <b>data.json</b> trong repo bạn chỉ định.<br>
+  Nên dùng một repo <b>Private</b> riêng để thông tin khách không công khai.</div>
+
+  <label for="gToken">Token (Personal Access Token)</label>
+  <input type="password" id="gToken" placeholder="github_pat_... hoặc ghp_...">
+  <div class="hint">Tạo tại: GitHub → Settings → Developer settings → Tokens</div>
+
+  <label for="gOwner">Tên đăng nhập GitHub</label>
+  <input type="text" id="gOwner" placeholder="vd: quanbiendem">
+
+  <label for="gRepo">Tên repo chứa dữ liệu</label>
+  <input type="text" id="gRepo" placeholder="vd: du-lieu-tiec">
+
+  <div class="sect">Thao tác</div>
+  <div class="dlg-actions">
+    <button class="btn-print" id="btnPush">⬆ Lưu lên GitHub</button>
+    <button class="btn-print" id="btnPull">⬇ Tải về từ GitHub</button>
+  </div>
+  <div class="dlg-actions">
+    <button class="btn-ghost" id="btnSyncClose" style="flex:1">Đóng</button>
+  </div>
+  <div class="hint" id="syncStatus" style="margin-top:10px; min-height:16px;"></div>
 </dialog>
 
 <script>
@@ -544,6 +571,120 @@ document.getElementById('btnClear').addEventListener('click', () => {
     renderSummary();
   }
 });
+
+/* ---- đồng bộ GitHub ---- */
+const dlgSync = document.getElementById('dlgSync');
+const gToken = document.getElementById('gToken');
+const gOwner = document.getElementById('gOwner');
+const gRepo  = document.getElementById('gRepo');
+const syncStatus = document.getElementById('syncStatus');
+const KEY_GH = 'seatmap_bien_dem_github';
+
+let ghCfg = {};
+try{ ghCfg = JSON.parse(localStorage.getItem(KEY_GH)) || {}; }catch(e){}
+
+function saveGhCfg(){
+  ghCfg = {token:gToken.value.trim(), owner:gOwner.value.trim(), repo:gRepo.value.trim()};
+  try{ localStorage.setItem(KEY_GH, JSON.stringify(ghCfg)); }catch(e){}
+}
+function ghReady(){ return ghCfg.token && ghCfg.owner && ghCfg.repo; }
+function setStatus(msg, ok){
+  syncStatus.textContent = msg;
+  syncStatus.style.color = ok === false ? '#e58a7a' : (ok ? '#A9D08E' : '#8f866f');
+}
+
+document.getElementById('btnSync').addEventListener('click', () => {
+  gToken.value = ghCfg.token || '';
+  gOwner.value = ghCfg.owner || '';
+  gRepo.value  = ghCfg.repo  || '';
+  setStatus('');
+  dlgSync.showModal();
+});
+document.getElementById('btnSyncClose').addEventListener('click', () => dlgSync.close());
+
+function ghUrl(){
+  return 'https://api.github.com/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/contents/data.json';
+}
+function ghHeaders(){
+  return {
+    'Authorization': 'Bearer ' + ghCfg.token,
+    'Accept': 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28'
+  };
+}
+/* base64 an toàn cho tiếng Việt */
+function toB64(str){
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin);
+}
+function fromB64(b64){
+  const bin = atob(b64.replace(/\n/g, ''));
+  const bytes = Uint8Array.from(bin, ch => ch.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+async function pushToGitHub(){
+  saveGhCfg();
+  if(!ghReady()){ setStatus('Vui lòng điền đủ Token, Tên đăng nhập và Tên repo.', false); return; }
+  setStatus('Đang lưu lên GitHub...');
+  try{
+    /* lấy sha nếu file đã tồn tại */
+    let sha = null;
+    const res0 = await fetch(ghUrl(), {headers:ghHeaders()});
+    if(res0.status === 200){ sha = (await res0.json()).sha; }
+    else if(res0.status !== 404){
+      throw new Error(res0.status === 401 ? 'Token không hợp lệ hoặc hết hạn.' :
+        'Không truy cập được repo (mã ' + res0.status + '). Kiểm tra tên đăng nhập/repo và quyền của token.');
+    }
+    const payload = {app:'so_do_bien_dem', version:2, saved_at:new Date().toISOString(),
+      event_date:fDate.value || '', data:data};
+    const body = {message:'Cập nhật sơ đồ ' + new Date().toLocaleString('vi-VN'),
+      content:toB64(JSON.stringify(payload, null, 2))};
+    if(sha) body.sha = sha;
+    const res = await fetch(ghUrl(), {method:'PUT', headers:ghHeaders(), body:JSON.stringify(body)});
+    if(!res.ok){
+      const err = await res.json().catch(() => ({}));
+      throw new Error('Lưu thất bại (mã ' + res.status + '). ' + (err.message || ''));
+    }
+    setStatus('✔ Đã lưu lên GitHub lúc ' + new Date().toLocaleTimeString('vi-VN'), true);
+  }catch(err){
+    setStatus('Lỗi: ' + err.message, false);
+  }
+}
+
+async function pullFromGitHub(silent){
+  if(!silent) saveGhCfg();
+  if(!ghReady()){ if(!silent) setStatus('Vui lòng điền đủ Token, Tên đăng nhập và Tên repo.', false); return; }
+  if(!silent) setStatus('Đang tải từ GitHub...');
+  try{
+    const res = await fetch(ghUrl(), {headers:ghHeaders()});
+    if(res.status === 404){ if(!silent) setStatus('Chưa có dữ liệu trên repo này. Hãy bấm "Lưu lên GitHub" trước.', false); return; }
+    if(!res.ok) throw new Error(res.status === 401 ? 'Token không hợp lệ.' : 'Không tải được (mã ' + res.status + ').');
+    const obj = JSON.parse(fromB64((await res.json()).content));
+    const incoming = obj && obj.data ? obj.data : obj;
+    if(typeof incoming !== 'object' || incoming === null) throw new Error('File data.json sai định dạng.');
+    data = incoming;
+    if(obj.event_date){
+      fDate.value = obj.event_date;
+      try{ localStorage.setItem(KEY_DATE, obj.event_date); }catch(e){}
+    }
+    persist();
+    ROWS.forEach(r => { for(let c = 1; c <= COLS; c++) renderCell(r.name + c); });
+    renderSummary();
+    if(!silent) setStatus('✔ Đã tải dữ liệu về (lưu lần cuối: ' +
+      (obj.saved_at ? new Date(obj.saved_at).toLocaleString('vi-VN') : 'không rõ') + ')', true);
+  }catch(err){
+    if(!silent) setStatus('Lỗi: ' + err.message, false);
+  }
+}
+
+document.getElementById('btnPush').addEventListener('click', pushToGitHub);
+document.getElementById('btnPull').addEventListener('click', () => pullFromGitHub(false));
+
+/* mở trang: nếu đã cấu hình GitHub thì tự tải dữ liệu mới nhất */
+if(ghReady()) pullFromGitHub(true);
 
 /* ---- khởi tạo ---- */
 ROWS.forEach(r => { for(let c = 1; c <= COLS; c++) renderCell(r.name + c); });
