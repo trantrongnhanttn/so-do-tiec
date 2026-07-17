@@ -55,6 +55,16 @@
   }
   .datebox input[type=date]:focus{outline:none; border-color:var(--gold);}
   .datebox input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.8) sepia(.6);}
+  #autoStatus{
+    position:fixed; right:14px; bottom:12px; z-index:50;
+    font-size:12.5px; padding:7px 14px; border-radius:20px;
+    background:rgba(18,22,42,.92); border:1px solid #4a4a5a; color:var(--muted);
+    opacity:0; transition:opacity .25s; pointer-events:none;
+  }
+  #autoStatus.show{opacity:1;}
+  #autoStatus.ok{color:var(--leaf); border-color:#3f5a2a;}
+  #autoStatus.err{color:#e58a7a; border-color:#7a3a2c;}
+  @media print{ #autoStatus{display:none;} }
 
   /* ===== Thanh tổng kết ===== */
   .summary{
@@ -199,6 +209,8 @@
 <div class="summary" id="summary"></div>
 
 <main><div class="grid" id="grid"></div></main>
+
+<div id="autoStatus"></div>
 
 <div id="printArea"></div>
 
@@ -443,10 +455,12 @@ document.getElementById('btnSave').addEventListener('click', () => {
   };
   if(isBooked(d)) data[currentId] = d; else delete data[currentId];
   persist(); renderCell(currentId); renderSummary(); dlg.close();
+  queueAutoPush();
 });
 document.getElementById('btnDelete').addEventListener('click', () => {
   delete data[currentId];
   persist(); renderCell(currentId); renderSummary(); dlg.close();
+  queueAutoPush();
 });
 document.getElementById('btnClose').addEventListener('click', () => dlg.close());
 dlg.addEventListener('keydown', e => {
@@ -490,6 +504,7 @@ document.getElementById('fileImport').addEventListener('change', e => {
       persist();
       ROWS.forEach(r => { for(let c = 1; c <= COLS; c++) renderCell(r.name + c); });
       renderSummary();
+      queueAutoPush();
       alert('Đã nạp dữ liệu từ file: ' + file.name);
     }catch(err){
       alert('File không đúng định dạng JSON của sơ đồ này.');
@@ -569,8 +584,10 @@ document.getElementById('btnClear').addEventListener('click', () => {
     data = {}; persist();
     ROWS.forEach(r => { for(let c = 1; c <= COLS; c++) renderCell(r.name + c); });
     renderSummary();
+    queueAutoPush();
   }
 });
+fDate.addEventListener('change', queueAutoPush);
 
 /* ---- đồng bộ GitHub ---- */
 const dlgSync = document.getElementById('dlgSync');
@@ -625,10 +642,23 @@ function fromB64(b64){
   return new TextDecoder().decode(bytes);
 }
 
-async function pushToGitHub(){
-  saveGhCfg();
-  if(!ghReady()){ setStatus('Vui lòng điền đủ Token, Tên đăng nhập và Tên repo.', false); return; }
-  setStatus('Đang lưu lên GitHub...');
+const autoStatus = document.getElementById('autoStatus');
+let statusTimer = null;
+function flashStatus(msg, cls, sticky){
+  autoStatus.textContent = msg;
+  autoStatus.className = 'show' + (cls ? ' ' + cls : '');
+  clearTimeout(statusTimer);
+  if(!sticky) statusTimer = setTimeout(() => { autoStatus.className = ''; }, 3000);
+}
+
+async function pushToGitHub(silent){
+  if(!silent) saveGhCfg();
+  if(!ghReady()){
+    if(!silent) setStatus('Vui lòng điền đủ Token, Tên đăng nhập và Tên repo.', false);
+    return;
+  }
+  if(silent) flashStatus('☁ Đang lưu...', '', true);
+  else setStatus('Đang lưu lên GitHub...');
   try{
     /* lấy sha nếu file đã tồn tại */
     let sha = null;
@@ -648,10 +678,21 @@ async function pushToGitHub(){
       const err = await res.json().catch(() => ({}));
       throw new Error('Lưu thất bại (mã ' + res.status + '). ' + (err.message || ''));
     }
-    setStatus('✔ Đã lưu lên GitHub lúc ' + new Date().toLocaleTimeString('vi-VN'), true);
+    const t = new Date().toLocaleTimeString('vi-VN');
+    if(silent) flashStatus('✔ Đã lưu lên GitHub ' + t, 'ok');
+    else setStatus('✔ Đã lưu lên GitHub lúc ' + t, true);
   }catch(err){
-    setStatus('Lỗi: ' + err.message, false);
+    if(silent) flashStatus('⚠ Lưu tự động lỗi: ' + err.message, 'err', true);
+    else setStatus('Lỗi: ' + err.message, false);
   }
+}
+
+/* tự động đẩy lên GitHub sau mỗi thay đổi (gộp các thay đổi trong 1.2 giây) */
+let pushTimer = null;
+function queueAutoPush(){
+  if(!ghReady()) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => pushToGitHub(true), 1200);
 }
 
 async function pullFromGitHub(silent){
@@ -680,7 +721,7 @@ async function pullFromGitHub(silent){
   }
 }
 
-document.getElementById('btnPush').addEventListener('click', pushToGitHub);
+document.getElementById('btnPush').addEventListener('click', () => pushToGitHub(false));
 document.getElementById('btnPull').addEventListener('click', () => pullFromGitHub(false));
 
 /* ---- tự nạp dữ liệu cho MỌI người xem, không cần token ----
@@ -701,17 +742,16 @@ function applyPayload(obj){
 }
 
 async function autoLoad(){
-  /* 1) thử đọc data.json công khai cạnh trang (không cần token) */
+  /* máy đã cấu hình token (máy quản lý): đọc qua API để luôn lấy bản mới nhất */
+  if(ghReady()){ pullFromGitHub(true); return; }
+  /* người xem: đọc data.json công khai cạnh trang, không cần token */
   try{
     const res = await fetch('data.json?t=' + Date.now(), {cache:'no-store'});
     if(res.ok){
       const obj = await res.json();
       if(applyPayload(obj)) return;
     }
-  }catch(e){ /* mở file cục bộ hoặc chưa có data.json -> thử cách khác */ }
-  /* 2) nếu máy này đã cấu hình token thì đọc qua API (mới nhất, không bị cache) */
-  if(ghReady()) pullFromGitHub(true);
-  /* 3) không thì giữ dữ liệu localStorage đã nạp sẵn */
+  }catch(e){ /* mở file cục bộ hoặc chưa có data.json -> dùng localStorage sẵn có */ }
 }
 autoLoad();
 
