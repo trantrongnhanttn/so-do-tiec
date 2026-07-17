@@ -1,7 +1,7 @@
 {
   "app": "so_do_bien_dem",
   "version": 2,
-  "saved_at": "2026-07-17T04:55:53.477Z",
+  "saved_at": "2026-07-17T04:56:05.831Z",
   "event_date": "2026-07-24",
   "data": {
     "A1": {
@@ -19,6 +19,13 @@
       "squid": 0
     },
     "A3": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 1,
+      "beer": 0,
+      "squid": 0
+    },
+    "A4": {
       "people": 2,
       "tables": 1,
       "stoves": 1,
