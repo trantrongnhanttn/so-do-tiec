@@ -1,10 +1,17 @@
 {
   "app": "so_do_bien_dem",
   "version": 2,
-  "saved_at": "2026-07-17T04:52:01.974Z",
+  "saved_at": "2026-07-17T04:52:12.327Z",
   "event_date": "2026-07-24",
   "data": {
     "A1": {
+      "people": 2,
+      "tables": 1,
+      "stoves": 1,
+      "beer": 0,
+      "squid": 0
+    },
+    "A2": {
       "people": 2,
       "tables": 1,
       "stoves": 1,
