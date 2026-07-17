@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sơ đồ Dạ Tiệc Ánh Sáng Biển Đêm</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
   :root{
     --navy:#0a1a3a; --navy2:#13294f;
@@ -53,8 +56,11 @@
     border:1px solid #6b5c3a; background:#12162a; color:var(--gold);
     font-weight:700; cursor:pointer;
   }
+  .datebox input[type=date]:disabled{opacity:.6; cursor:default;}
   .datebox input[type=date]:focus{outline:none; border-color:var(--gold);}
   .datebox input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.8) sepia(.6);}
+  .userchip{font-size:12.5px; color:var(--leaf);}
+
   #autoStatus{
     position:fixed; right:14px; bottom:12px; z-index:50;
     font-size:12.5px; padding:7px 14px; border-radius:20px;
@@ -64,7 +70,11 @@
   #autoStatus.show{opacity:1;}
   #autoStatus.ok{color:var(--leaf); border-color:#3f5a2a;}
   #autoStatus.err{color:#e58a7a; border-color:#7a3a2c;}
-  @media print{ #autoStatus{display:none;} }
+
+  #configBanner{
+    display:none; margin:0 20px 10px; padding:10px 14px; border-radius:8px;
+    background:#3a1810; border:1px solid #7a3a2c; color:#e5a89a; font-size:13px;
+  }
 
   /* ===== Thanh tổng kết ===== */
   .summary{
@@ -93,7 +103,7 @@
     border:1.5px solid #2a1c10;
     padding:17px 3px 4px;
     cursor:pointer;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
     transition:transform .08s ease, box-shadow .08s ease;
     color:var(--ink); font:inherit;
   }
@@ -105,15 +115,11 @@
     position:absolute; top:3px; left:6px;
     font-size:11px; font-weight:700; opacity:.85;
   }
-  .cell .people{font-size:18px; font-weight:800; line-height:1;}
-  .cell .people small{font-size:10px; font-weight:400; opacity:.8;}
-  .cell .extra{
-    font-size:10.5px; line-height:1.25; opacity:.95; text-align:center;
-    white-space:normal; word-break:keep-all;
-  }
+  .cell .l1{font-size:12px; font-weight:700; line-height:1.15; text-align:center;}
+  .cell .l2{font-size:10.5px; line-height:1.2; opacity:.95; text-align:center;}
   .cell.booked{border-color:var(--gold); box-shadow:inset 0 0 0 1px rgba(233,196,106,.4);}
 
-  /* ===== Hộp thoại ghi chú ===== */
+  /* ===== Hộp thoại ===== */
   dialog{
     border:1px solid var(--gold); border-radius:12px;
     background:#1d2233; color:var(--ink);
@@ -125,7 +131,7 @@
   .fieldrow{display:flex; gap:12px;}
   .fieldrow > div{flex:1;}
   dialog label{display:block; font-size:12.5px; color:var(--muted); margin:10px 0 4px;}
-  dialog input[type=number], dialog input[type=text], dialog input[type=password]{
+  dialog input[type=number], dialog input[type=text], dialog input[type=email], dialog input[type=password]{
     width:100%; padding:8px 10px; border-radius:7px;
     border:1px solid #4a4a5a; background:#12162a; color:var(--ink);
     font:inherit;
@@ -138,14 +144,14 @@
   .dlg-actions .btn-print{flex:1;}
   .btn-danger{background:transparent; color:#e58a7a; border:1px solid #7a3a2c;}
   .btn-danger:hover{background:#3a1810;}
+  .loginerr{font-size:12px; color:#e58a7a; margin-top:8px; min-height:15px;}
 
-  /* ===== In ấn: bố cục riêng cho A4 ngang, máy in đen trắng ===== */
+  /* ===== In ấn: A4 ngang, máy in đen trắng ===== */
   #printArea{display:none;}
-
   @media print{
     @page{size:A4 landscape; margin:7mm;}
     body{background:#fff !important; color:#000; display:block;}
-    header, .summary, main, dialog{display:none !important;}
+    header, .summary, main, dialog, #autoStatus, #configBanner{display:none !important;}
     #printArea{display:block; font-family:Arial, "Segoe UI", sans-serif; color:#000;}
 
     .p-head{display:flex; align-items:baseline; gap:14px; margin-bottom:2mm;}
@@ -173,14 +179,12 @@
       -webkit-print-color-adjust:exact; print-color-adjust:exact;
       display:flex; flex-direction:column; justify-content:center; gap:0;
     }
-    /* Phân biệt khu vực trên máy in đen trắng:
-       A–D (bếp nướng) nền trắng viền đậm · E–F nền xám nhạt viền mảnh */
     .p-cell.g{background:#e6e6e6; border-width:0.25mm;}
     .p-cell .p-num{
       position:absolute; top:0.4mm; left:0.9mm;
       font-size:6.5pt; font-weight:700; color:#000;
     }
-    .p-cell .p-people{font-size:9pt; font-weight:800; text-align:center; line-height:1.05;}
+    .p-cell .p-people{font-size:8.5pt; font-weight:800; text-align:center; line-height:1.1;}
     .p-cell .p-extra{font-size:6.5pt; text-align:center; line-height:1.15; color:#111;}
     .p-cell.empty .p-num{color:#777; font-weight:400;}
   }
@@ -196,24 +200,25 @@
   </div>
   <div class="spacer"></div>
   <label class="datebox">Ngày tiệc
-    <input type="date" id="fDate" title="Chọn ngày của sơ đồ này">
+    <input type="date" id="fDate" title="Chọn ngày của sơ đồ này" disabled>
   </label>
-  <button class="btn-ghost" id="btnSync">☁ GitHub</button>
-  <button class="btn-ghost" id="btnExport">💾 Lưu file JSON</button>
-  <button class="btn-ghost" id="btnImport">📂 Mở file JSON</button>
+  <span class="userchip" id="userChip"></span>
+  <button class="btn-ghost" id="btnImport" hidden>📂 Nhập JSON</button>
   <input type="file" id="fileImport" accept=".json,application/json" hidden>
-  <button class="btn-ghost" id="btnClear">Xóa tất cả</button>
+  <button class="btn-ghost" id="btnClear" hidden>Xóa tất cả</button>
   <button class="btn-print" id="btnPrint">🖨 In sơ đồ</button>
+  <button class="btn-ghost" id="btnAuth">Đăng nhập</button>
 </header>
 
+<div id="configBanner"></div>
 <div class="summary" id="summary"></div>
 
 <main><div class="grid" id="grid"></div></main>
 
 <div id="autoStatus"></div>
-
 <div id="printArea"></div>
 
+<!-- Hộp thoại nhập liệu 1 ô -->
 <dialog id="dlg">
   <h2 id="dlgTitle">Vị trí A1</h2>
   <div class="price" id="dlgPrice"></div>
@@ -226,17 +231,13 @@
     <div>
       <label for="fTables">Số bàn</label>
       <input type="number" id="fTables" min="0" max="99" step="1" placeholder="0">
-      <div class="hint">Tự tính theo số người, sửa được</div>
     </div>
-  </div>
-
-  <div class="fieldrow">
     <div>
       <label for="fStoves">Số bếp</label>
       <input type="number" id="fStoves" min="0" max="99" step="1" placeholder="0">
     </div>
-    <div></div>
   </div>
+  <div class="hint">Số bàn và số bếp tự tính theo số người, bạn sửa lại được tùy ý.</div>
 
   <div class="sect">Đồ ăn thêm</div>
   <div class="fieldrow">
@@ -257,78 +258,67 @@
   </div>
 </dialog>
 
-<dialog id="dlgSync">
-  <h2>☁ Đồng bộ qua GitHub</h2>
-  <div class="price">Dữ liệu được lưu vào file <b>data.json</b> trong repo bạn chỉ định.<br>
-  Nên dùng một repo <b>Private</b> riêng để thông tin khách không công khai.</div>
-
-  <label for="gToken">Token (Personal Access Token)</label>
-  <input type="password" id="gToken" placeholder="github_pat_... hoặc ghp_...">
-  <div class="hint">Tạo tại: GitHub → Settings → Developer settings → Tokens</div>
-
-  <label for="gOwner">Tên đăng nhập GitHub</label>
-  <input type="text" id="gOwner" placeholder="vd: quanbiendem">
-
-  <label for="gRepo">Tên repo chứa dữ liệu</label>
-  <input type="text" id="gRepo" placeholder="vd: du-lieu-tiec">
-
-  <div class="sect">Thao tác</div>
+<!-- Hộp thoại đăng nhập -->
+<dialog id="dlgLogin">
+  <h2>Đăng nhập</h2>
+  <div class="price">Chỉ người đăng nhập mới chỉnh sửa được sơ đồ. Mọi người khác vẫn xem bình thường.</div>
+  <label for="lEmail">Email</label>
+  <input type="email" id="lEmail" placeholder="ten@quan.com" autocomplete="username">
+  <label for="lPass">Mật khẩu</label>
+  <input type="password" id="lPass" autocomplete="current-password">
+  <div class="loginerr" id="loginErr"></div>
   <div class="dlg-actions">
-    <button class="btn-print" id="btnPush">⬆ Lưu lên GitHub</button>
-    <button class="btn-print" id="btnPull">⬇ Tải về từ GitHub</button>
+    <button class="btn-print" id="btnDoLogin">Đăng nhập</button>
+    <button class="btn-ghost" id="btnLoginClose">Đóng</button>
   </div>
-  <div class="dlg-actions">
-    <button class="btn-ghost" id="btnSyncClose" style="flex:1">Đóng</button>
-  </div>
-  <div class="hint" id="syncStatus" style="margin-top:10px; min-height:16px;"></div>
 </dialog>
 
 <script>
+/* ================================================================
+   CẤU HÌNH — CHỈ CẦN SỬA 1 DÒNG DƯỚI ĐÂY
+   Lấy Web API Key: Firebase console → ⚙️ Project settings → General
+   → mục "Web API Key" → copy chuỗi (dạng AIzaSy...) dán thay thế.
+   ================================================================ */
+const FIREBASE_API_KEY = "AIzaSyCnGVjxOrrdOcY-EQY6CuTq6Ao2dHfsZ6c";
+const FIREBASE_DB_URL  = "https://so-do-tiec-default-rtdb.asia-southeast1.firebasedatabase.app";
+/* ================================================================ */
+
 const ROWS = [
-  {name:'A', cls:'r', desc:'199K/người · có bếp nướng'},
-  {name:'B', cls:'r', desc:'199K/người · có bếp nướng'},
-  {name:'C', cls:'r', desc:'199K/người · có bếp nướng'},
-  {name:'D', cls:'r', desc:'199K/người · có bếp nướng'},
-  {name:'E', cls:'g', desc:'129K/người · không bếp nướng'},
-  {name:'F', cls:'g', desc:'129K/người · không bếp nướng'},
+  {name:'A', cls:'r', desc:'199K/người · có bếp nướng', grill:true},
+  {name:'B', cls:'r', desc:'199K/người · có bếp nướng', grill:true},
+  {name:'C', cls:'r', desc:'199K/người · có bếp nướng', grill:true},
+  {name:'D', cls:'r', desc:'199K/người · có bếp nướng', grill:true},
+  {name:'E', cls:'g', desc:'129K/người · không bếp nướng', grill:false},
+  {name:'F', cls:'g', desc:'129K/người · không bếp nướng', grill:false},
 ];
 const COLS = 30;
-const KEY = 'seatmap_bien_dem_v2';
-const KEY_DATE = 'seatmap_bien_dem_date';
+const ROW_BY_NAME = {}; ROWS.forEach(r => ROW_BY_NAME[r.name] = r);
 
-/* dữ liệu: { "A1": {people, tables, stoves, beer, squid} } */
-let data = {};
+let data = {};          /* { "A1": {people, tables, stoves, beer, squid} } */
+let currentUser = null;
+
+/* cache cục bộ để trang hiện ngay khi mở, trước khi Firebase trả về */
+const KEY_CACHE = 'seatmap_fb_cache';
 try{
-  const saved = localStorage.getItem(KEY);
-  if(saved) data = JSON.parse(saved) || {};
+  const c = JSON.parse(localStorage.getItem(KEY_CACHE));
+  if(c && c.cells) data = c.cells;
 }catch(e){}
 
-/* ---- ngày tiệc ---- */
-const fDate = document.getElementById('fDate');
-try{
-  const savedDate = localStorage.getItem(KEY_DATE);
-  if(savedDate) fDate.value = savedDate;
-}catch(e){}
-fDate.addEventListener('change', () => {
-  try{ localStorage.setItem(KEY_DATE, fDate.value); }catch(e){}
-});
-function displayDate(){
-  if(!fDate.value) return '';
-  const [y, m, d] = fDate.value.split('-');
-  return d + '/' + m + '/' + y;
-}
-
-function persist(){
-  try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch(e){}
-}
-
-/* 2-3 người: 1 bàn · 5-7 người: 2 bàn · 8-10 người: 3 bàn */
+/* ---- công thức gợi ý ---- */
 function suggestTables(p){
   if(!p || p <= 0) return 0;
   if(p <= 4) return 1;
   if(p <= 7) return 2;
   if(p <= 10) return 3;
   return Math.ceil(p / 3.5);
+}
+/* 1-4 người: 1 bếp · 5-8: 2 bếp · 9-10: 3 bếp (chỉ khu A-D có bếp nướng) */
+function suggestStoves(p, grill){
+  if(!grill || !p || p <= 0) return 0;
+  if(p <= 4) return 1;
+  if(p <= 8) return 2;
+  if(p <= 10) return 3;
+  return Math.ceil(p / 4);
 }
 
 /* ---- dựng lưới ---- */
@@ -351,9 +341,10 @@ ROWS.forEach(row => {
     cell.id = 'cell-' + id;
     cell.innerHTML =
       '<span class="num">' + c + '</span>' +
-      '<span class="people"></span>' +
-      '<span class="extra"></span>';
-    cell.addEventListener('click', () => openDialog(id, row));
+      '<span class="l1"></span>' +
+      '<span class="l2 l2a"></span>' +
+      '<span class="l2 l2b"></span>';
+    cell.addEventListener('click', () => onCellClick(id, row));
     grid.appendChild(cell);
   }
 });
@@ -362,65 +353,144 @@ function isBooked(d){
   return d && (d.people || d.tables || d.stoves || d.beer || d.squid);
 }
 
-/* ---- vẽ lại 1 ô ---- */
 function renderCell(id){
   const cell = document.getElementById('cell-' + id);
   const d = data[id];
   cell.classList.toggle('booked', !!isBooked(d));
-  const people = cell.querySelector('.people');
-  const extra = cell.querySelector('.extra');
+  const l1 = cell.querySelector('.l1');
+  const a = cell.querySelector('.l2a');
+  const b = cell.querySelector('.l2b');
   if(isBooked(d)){
-    people.innerHTML = d.people ? d.people + '<small> người</small>' : '';
-    const bits = [];
-    if(d.tables) bits.push(d.tables + ' bàn');
-    if(d.stoves) bits.push(d.stoves + ' bếp');
-    if(d.beer)   bits.push(d.beer + '🍺');
-    if(d.squid)  bits.push(d.squid + '🦑');
-    extra.textContent = bits.join(' · ');
+    /* dòng 1: số người · số bàn */
+    const p1 = [];
+    if(d.people) p1.push(d.people + ' người');
+    if(d.tables) p1.push(d.tables + ' bàn');
+    l1.textContent = p1.join(' · ');
+    /* dòng 2: số bếp */
+    a.textContent = d.stoves ? d.stoves + ' bếp' : '';
+    /* dòng 3: bia · mực */
+    const p3 = [];
+    if(d.beer)  p3.push(d.beer + '🍺');
+    if(d.squid) p3.push(d.squid + '🦑');
+    b.textContent = p3.join(' · ');
   }else{
-    people.innerHTML = '';
-    extra.textContent = '';
+    l1.textContent = ''; a.textContent = ''; b.textContent = '';
   }
 }
+function renderAll(){
+  ROWS.forEach(r => { for(let c = 1; c <= COLS; c++) renderCell(r.name + c); });
+  renderSummary();
+}
 
-/* ---- tổng kết ---- */
-function renderSummary(){
+function totals(){
   let spots = 0, people = 0, tables = 0, stoves = 0, beer = 0, squid = 0;
   ROWS.forEach(row => {
     for(let c = 1; c <= COLS; c++){
       const d = data[row.name + c];
       if(isBooked(d)){
-        spots++;
-        people += d.people || 0;
-        tables += d.tables || 0;
-        stoves += d.stoves || 0;
-        beer   += d.beer   || 0;
-        squid  += d.squid  || 0;
+        spots++; people += d.people||0; tables += d.tables||0;
+        stoves += d.stoves||0; beer += d.beer||0; squid += d.squid||0;
       }
     }
   });
+  return {spots, people, tables, stoves, beer, squid};
+}
+function renderSummary(){
+  const t = totals();
   document.getElementById('summary').innerHTML =
-    'Vị trí đã đặt: <b>' + spots + '</b>/' + (ROWS.length * COLS) + ' &nbsp;·&nbsp; ' +
-    'Tổng số người: <b>' + people + '</b> &nbsp;·&nbsp; ' +
-    'Tổng số bàn: <b>' + tables + '</b> &nbsp;·&nbsp; ' +
-    'Tổng số bếp: <b>' + stoves + '</b> &nbsp;·&nbsp; ' +
-    'Bia: <b>' + beer + '</b> lon &nbsp;·&nbsp; ' +
-    'Mực: <b>' + squid + '</b> set';
+    'Vị trí đã đặt: <b>' + t.spots + '</b>/' + (ROWS.length * COLS) + ' &nbsp;·&nbsp; ' +
+    'Tổng số người: <b>' + t.people + '</b> &nbsp;·&nbsp; ' +
+    'Tổng số bàn: <b>' + t.tables + '</b> &nbsp;·&nbsp; ' +
+    'Tổng số bếp: <b>' + t.stoves + '</b> &nbsp;·&nbsp; ' +
+    'Bia: <b>' + t.beer + '</b> lon &nbsp;·&nbsp; ' +
+    'Mực: <b>' + t.squid + '</b> set';
 }
 
-/* ---- hộp thoại ---- */
+/* ---- thông báo góc phải ---- */
+const autoStatus = document.getElementById('autoStatus');
+let statusTimer = null;
+function flashStatus(msg, cls, sticky){
+  autoStatus.textContent = msg;
+  autoStatus.className = 'show' + (cls ? ' ' + cls : '');
+  clearTimeout(statusTimer);
+  if(!sticky) statusTimer = setTimeout(() => { autoStatus.className = ''; }, 3000);
+}
+
+/* ---- Firebase ---- */
+const fDate = document.getElementById('fDate');
+let fb = null, dbRoot = null, auth = null;
+const configOk = FIREBASE_API_KEY && FIREBASE_API_KEY.indexOf('DAN_') !== 0;
+
+if(configOk){
+  fb = firebase.initializeApp({apiKey:FIREBASE_API_KEY, databaseURL:FIREBASE_DB_URL});
+  dbRoot = firebase.database().ref('seatmap');
+  auth = firebase.auth();
+
+  /* đồng bộ realtime: bất kỳ ai sửa gì, mọi màn hình cập nhật ngay */
+  dbRoot.on('value', snap => {
+    const v = snap.val() || {};
+    data = v.cells || {};
+    if(v.event_date) fDate.value = v.event_date;
+    try{ localStorage.setItem(KEY_CACHE, JSON.stringify({cells:data, event_date:v.event_date||''})); }catch(e){}
+    renderAll();
+  }, err => {
+    flashStatus('⚠ Không kết nối được dữ liệu: ' + err.message, 'err', true);
+  });
+
+  auth.onAuthStateChanged(u => {
+    currentUser = u;
+    setAuthUI();
+  });
+}else{
+  document.getElementById('configBanner').style.display = 'block';
+  document.getElementById('configBanner').innerHTML =
+    '⚠ <b>Chưa cấu hình Web API Key.</b> Mở file index.html trên GitHub (biểu tượng cây bút ✏️), ' +
+    'tìm dòng <code>FIREBASE_API_KEY</code> gần đầu phần &lt;script&gt; và dán Web API Key của bạn vào ' +
+    '(lấy tại Firebase console → ⚙️ Project settings → General → Web API Key), rồi Commit.';
+}
+
+function setAuthUI(){
+  const on = !!currentUser;
+  document.getElementById('btnAuth').textContent = on ? 'Đăng xuất' : 'Đăng nhập';
+  document.getElementById('userChip').textContent = on ? '● ' + (currentUser.email || '') : '';
+  document.getElementById('btnImport').hidden = !on;
+  document.getElementById('btnClear').hidden = !on;
+  fDate.disabled = !on;
+}
+
+function requireLogin(){
+  if(!configOk){ flashStatus('⚠ Trang chưa cấu hình xong (thiếu API Key)', 'err'); return false; }
+  if(!currentUser){
+    flashStatus('🔒 Đăng nhập để chỉnh sửa', 'err');
+    openLogin();
+    return false;
+  }
+  return true;
+}
+
+/* ghi 1 ô lên Firebase */
+function writeCell(id, d){
+  const ref = dbRoot.child('cells/' + id);
+  const op = d ? ref.set(d) : ref.remove();
+  flashStatus('☁ Đang lưu...', '', true);
+  op.then(() => flashStatus('✔ Đã lưu ' + new Date().toLocaleTimeString('vi-VN'), 'ok'))
+    .catch(err => flashStatus('⚠ Lưu lỗi: ' + err.message, 'err', true));
+}
+
+/* ---- hộp thoại nhập liệu ---- */
 const dlg = document.getElementById('dlg');
 const fPeople = document.getElementById('fPeople');
 const fTables = document.getElementById('fTables');
 const fStoves = document.getElementById('fStoves');
 const fBeer   = document.getElementById('fBeer');
 const fSquid  = document.getElementById('fSquid');
-let currentId = null;
-let tablesEdited = false;
+let currentId = null, currentRow = null;
+let tablesEdited = false, stovesEdited = false;
 
-function openDialog(id, row){
-  currentId = id;
-  tablesEdited = false;
+function onCellClick(id, row){
+  if(!requireLogin()) return;
+  currentId = id; currentRow = row;
+  tablesEdited = false; stovesEdited = false;
   const d = data[id] || {};
   document.getElementById('dlgTitle').textContent = 'Vị trí ' + id;
   document.getElementById('dlgPrice').textContent = row.desc;
@@ -433,13 +503,13 @@ function openDialog(id, row){
   fPeople.focus(); fPeople.select();
 }
 
-/* số người thay đổi -> gợi ý số bàn (trừ khi người dùng đã tự sửa) */
 fPeople.addEventListener('input', () => {
-  if(tablesEdited) return;
   const p = parseInt(fPeople.value, 10) || 0;
-  fTables.value = suggestTables(p) || '';
+  if(!tablesEdited) fTables.value = suggestTables(p) || '';
+  if(!stovesEdited) fStoves.value = suggestStoves(p, currentRow.grill) || '';
 });
 fTables.addEventListener('input', () => { tablesEdited = true; });
+fStoves.addEventListener('input', () => { stovesEdited = true; });
 
 function num(el, max){
   let v = parseInt(el.value, 10);
@@ -449,41 +519,76 @@ function num(el, max){
 }
 
 document.getElementById('btnSave').addEventListener('click', () => {
+  if(!requireLogin()) return;
   const d = {
     people:num(fPeople, 99), tables:num(fTables, 99), stoves:num(fStoves, 99),
     beer:num(fBeer, 999), squid:num(fSquid, 999)
   };
-  if(isBooked(d)) data[currentId] = d; else delete data[currentId];
-  persist(); renderCell(currentId); renderSummary(); dlg.close();
-  queueAutoPush();
+  const val = isBooked(d) ? d : null;
+  if(val) data[currentId] = d; else delete data[currentId];
+  renderCell(currentId); renderSummary(); dlg.close();
+  writeCell(currentId, val);
 });
 document.getElementById('btnDelete').addEventListener('click', () => {
+  if(!requireLogin()) return;
   delete data[currentId];
-  persist(); renderCell(currentId); renderSummary(); dlg.close();
-  queueAutoPush();
+  renderCell(currentId); renderSummary(); dlg.close();
+  writeCell(currentId, null);
 });
 document.getElementById('btnClose').addEventListener('click', () => dlg.close());
 dlg.addEventListener('keydown', e => {
   if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('btnSave').click(); }
 });
 
-/* ---- lưu / mở file JSON ---- */
-document.getElementById('btnExport').addEventListener('click', () => {
-  const payload = {app:'so_do_bien_dem', version:2, saved_at:new Date().toISOString(),
-    event_date:fDate.value || '', data:data};
-  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
-  const a = document.createElement('a');
-  let stamp = fDate.value;
-  if(!stamp){
-    const d = new Date();
-    stamp = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-  }
-  a.href = URL.createObjectURL(blob);
-  a.download = 'so_do_ban_tiec_' + stamp + '.json';
-  a.click();
-  URL.revokeObjectURL(a.href);
+/* ---- ngày tiệc ---- */
+fDate.addEventListener('change', () => {
+  if(!requireLogin()) return;
+  dbRoot.child('event_date').set(fDate.value)
+    .then(() => flashStatus('✔ Đã lưu ngày tiệc', 'ok'))
+    .catch(err => flashStatus('⚠ ' + err.message, 'err', true));
 });
 
+/* ---- đăng nhập / đăng xuất ---- */
+const dlgLogin = document.getElementById('dlgLogin');
+const lEmail = document.getElementById('lEmail');
+const lPass  = document.getElementById('lPass');
+const loginErr = document.getElementById('loginErr');
+
+function openLogin(){
+  if(!configOk) return;
+  loginErr.textContent = '';
+  lPass.value = '';
+  dlgLogin.showModal();
+  (lEmail.value ? lPass : lEmail).focus();
+}
+document.getElementById('btnAuth').addEventListener('click', () => {
+  if(!configOk){ flashStatus('⚠ Thiếu API Key, xem hướng dẫn đầu trang', 'err'); return; }
+  if(currentUser){ auth.signOut(); flashStatus('Đã đăng xuất'); }
+  else openLogin();
+});
+document.getElementById('btnDoLogin').addEventListener('click', async () => {
+  loginErr.textContent = '';
+  try{
+    await auth.signInWithEmailAndPassword(lEmail.value.trim(), lPass.value);
+    dlgLogin.close();
+    flashStatus('✔ Đăng nhập thành công', 'ok');
+  }catch(err){
+    const m = {
+      'auth/invalid-credential':'Sai email hoặc mật khẩu.',
+      'auth/wrong-password':'Sai mật khẩu.',
+      'auth/user-not-found':'Không tìm thấy tài khoản này.',
+      'auth/invalid-email':'Email không hợp lệ.',
+      'auth/too-many-requests':'Thử sai quá nhiều, đợi một lát rồi thử lại.'
+    };
+    loginErr.textContent = m[err.code] || ('Lỗi: ' + err.message);
+  }
+});
+document.getElementById('btnLoginClose').addEventListener('click', () => dlgLogin.close());
+dlgLogin.addEventListener('keydown', e => {
+  if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('btnDoLogin').click(); }
+});
+
+/* ---- nhập JSON (chuyển dữ liệu cũ / danh sách đặt chỗ) ---- */
 document.getElementById('btnImport').addEventListener('click', () => {
   document.getElementById('fileImport').click();
 });
@@ -494,18 +599,20 @@ document.getElementById('fileImport').addEventListener('change', e => {
   reader.onload = () => {
     try{
       const obj = JSON.parse(reader.result);
-      const incoming = obj && obj.data ? obj.data : obj; /* chấp nhận cả file chỉ chứa data */
+      const incoming = obj && obj.data ? obj.data : obj;
       if(typeof incoming !== 'object' || incoming === null) throw new Error('sai định dạng');
-      data = incoming;
-      if(obj && obj.event_date){
-        fDate.value = obj.event_date;
-        try{ localStorage.setItem(KEY_DATE, obj.event_date); }catch(e2){}
-      }
-      persist();
-      ROWS.forEach(r => { for(let c = 1; c <= COLS; c++) renderCell(r.name + c); });
-      renderSummary();
-      queueAutoPush();
-      alert('Đã nạp dữ liệu từ file: ' + file.name);
+      /* tự bổ sung số bếp cho khu A-D nếu file cũ chưa có */
+      Object.keys(incoming).forEach(k => {
+        const d = incoming[k];
+        const row = ROW_BY_NAME[k.charAt(0)];
+        if(d && row && !d.stoves) d.stoves = suggestStoves(d.people || 0, row.grill);
+      });
+      const payload = {cells:incoming};
+      if(obj.event_date) payload.event_date = obj.event_date;
+      flashStatus('☁ Đang nạp lên...', '', true);
+      dbRoot.update(payload)
+        .then(() => flashStatus('✔ Đã nạp ' + Object.keys(incoming).length + ' vị trí từ ' + file.name, 'ok'))
+        .catch(err => flashStatus('⚠ ' + err.message, 'err', true));
     }catch(err){
       alert('File không đúng định dạng JSON của sơ đồ này.');
     }
@@ -514,19 +621,25 @@ document.getElementById('fileImport').addEventListener('change', e => {
   e.target.value = '';
 });
 
-/* ---- bố cục in: chia 30 cột thành 2 khối 15 cột ---- */
+/* ---- xóa tất cả ---- */
+document.getElementById('btnClear').addEventListener('click', () => {
+  if(!requireLogin()) return;
+  if(confirm('Xóa toàn bộ dữ liệu trên tất cả các vị trí?')){
+    dbRoot.child('cells').remove()
+      .then(() => flashStatus('✔ Đã xóa toàn bộ', 'ok'))
+      .catch(err => flashStatus('⚠ ' + err.message, 'err', true));
+  }
+});
+
+/* ---- bố cục in: 2 khối 15 cột ---- */
+function displayDate(){
+  if(!fDate.value) return '';
+  const parts = fDate.value.split('-');
+  return parts[2] + '/' + parts[1] + '/' + parts[0];
+}
 function buildPrintArea(){
   const area = document.getElementById('printArea');
-  let spots = 0, people = 0, tables = 0, stoves = 0, beer = 0, squid = 0;
-  ROWS.forEach(row => {
-    for(let c = 1; c <= COLS; c++){
-      const d = data[row.name + c];
-      if(isBooked(d)){
-        spots++; people += d.people||0; tables += d.tables||0;
-        stoves += d.stoves||0; beer += d.beer||0; squid += d.squid||0;
-      }
-    }
-  });
+  const t = totals();
 
   function block(from, to){
     let h = '<div class="p-block">' +
@@ -540,13 +653,13 @@ function buildPrintArea(){
         h += '<div class="p-cell ' + row.cls + (booked ? '' : ' empty') + '">' +
              '<span class="p-num">' + c + '</span>';
         if(booked){
-          if(d.people) h += '<span class="p-people">' + d.people + ' người</span>';
           const l1 = [], l2 = [];
+          if(d.people) l1.push(d.people + ' người');
           if(d.tables) l1.push(d.tables + ' bàn');
-          if(d.stoves) l1.push(d.stoves + ' bếp');
+          if(d.stoves) l2.push(d.stoves + ' bếp');
           if(d.beer)   l2.push(d.beer + ' bia');
           if(d.squid)  l2.push(d.squid + ' mực');
-          if(l1.length) h += '<span class="p-extra">' + l1.join(' · ') + '</span>';
+          if(l1.length) h += '<span class="p-people">' + l1.join(' · ') + '</span>';
           if(l2.length) h += '<span class="p-extra">' + l2.join(' · ') + '</span>';
         }
         h += '</div>';
@@ -563,201 +676,24 @@ function buildPrintArea(){
       'E–F: 129K/người, không bếp nướng (ô xám)</span>' +
     '</div>' +
     '<div class="p-summary">' +
-      'Đã đặt: <b>' + spots + '</b>/' + (ROWS.length * COLS) +
-      ' &nbsp;·&nbsp; Người: <b>' + people + '</b>' +
-      ' &nbsp;·&nbsp; Bàn: <b>' + tables + '</b>' +
-      ' &nbsp;·&nbsp; Bếp: <b>' + stoves + '</b>' +
-      ' &nbsp;·&nbsp; Bia: <b>' + beer + '</b> lon' +
-      ' &nbsp;·&nbsp; Mực: <b>' + squid + '</b> set' +
+      'Đã đặt: <b>' + t.spots + '</b>/' + (ROWS.length * COLS) +
+      ' &nbsp;·&nbsp; Người: <b>' + t.people + '</b>' +
+      ' &nbsp;·&nbsp; Bàn: <b>' + t.tables + '</b>' +
+      ' &nbsp;·&nbsp; Bếp: <b>' + t.stoves + '</b>' +
+      ' &nbsp;·&nbsp; Bia: <b>' + t.beer + '</b> lon' +
+      ' &nbsp;·&nbsp; Mực: <b>' + t.squid + '</b> set' +
     '</div>' +
     block(1, 15) + block(16, 30);
 }
-
-/* ---- nút chung ---- */
 window.addEventListener('beforeprint', buildPrintArea);
 document.getElementById('btnPrint').addEventListener('click', () => {
   buildPrintArea();
   window.print();
 });
-document.getElementById('btnClear').addEventListener('click', () => {
-  if(confirm('Xóa toàn bộ dữ liệu trên tất cả các vị trí?')){
-    data = {}; persist();
-    ROWS.forEach(r => { for(let c = 1; c <= COLS; c++) renderCell(r.name + c); });
-    renderSummary();
-    queueAutoPush();
-  }
-});
-fDate.addEventListener('change', queueAutoPush);
-
-/* ---- đồng bộ GitHub ---- */
-const dlgSync = document.getElementById('dlgSync');
-const gToken = document.getElementById('gToken');
-const gOwner = document.getElementById('gOwner');
-const gRepo  = document.getElementById('gRepo');
-const syncStatus = document.getElementById('syncStatus');
-const KEY_GH = 'seatmap_bien_dem_github';
-
-let ghCfg = {};
-try{ ghCfg = JSON.parse(localStorage.getItem(KEY_GH)) || {}; }catch(e){}
-
-function saveGhCfg(){
-  ghCfg = {token:gToken.value.trim(), owner:gOwner.value.trim(), repo:gRepo.value.trim()};
-  try{ localStorage.setItem(KEY_GH, JSON.stringify(ghCfg)); }catch(e){}
-}
-function ghReady(){ return ghCfg.token && ghCfg.owner && ghCfg.repo; }
-function setStatus(msg, ok){
-  syncStatus.textContent = msg;
-  syncStatus.style.color = ok === false ? '#e58a7a' : (ok ? '#A9D08E' : '#8f866f');
-}
-
-document.getElementById('btnSync').addEventListener('click', () => {
-  gToken.value = ghCfg.token || '';
-  gOwner.value = ghCfg.owner || '';
-  gRepo.value  = ghCfg.repo  || '';
-  setStatus('');
-  dlgSync.showModal();
-});
-document.getElementById('btnSyncClose').addEventListener('click', () => dlgSync.close());
-
-function ghUrl(){
-  return 'https://api.github.com/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/contents/data.json';
-}
-function ghHeaders(){
-  return {
-    'Authorization': 'Bearer ' + ghCfg.token,
-    'Accept': 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28'
-  };
-}
-/* base64 an toàn cho tiếng Việt */
-function toB64(str){
-  const bytes = new TextEncoder().encode(str);
-  let bin = '';
-  bytes.forEach(b => bin += String.fromCharCode(b));
-  return btoa(bin);
-}
-function fromB64(b64){
-  const bin = atob(b64.replace(/\n/g, ''));
-  const bytes = Uint8Array.from(bin, ch => ch.charCodeAt(0));
-  return new TextDecoder().decode(bytes);
-}
-
-const autoStatus = document.getElementById('autoStatus');
-let statusTimer = null;
-function flashStatus(msg, cls, sticky){
-  autoStatus.textContent = msg;
-  autoStatus.className = 'show' + (cls ? ' ' + cls : '');
-  clearTimeout(statusTimer);
-  if(!sticky) statusTimer = setTimeout(() => { autoStatus.className = ''; }, 3000);
-}
-
-async function pushToGitHub(silent){
-  if(!silent) saveGhCfg();
-  if(!ghReady()){
-    if(!silent) setStatus('Vui lòng điền đủ Token, Tên đăng nhập và Tên repo.', false);
-    return;
-  }
-  if(silent) flashStatus('☁ Đang lưu...', '', true);
-  else setStatus('Đang lưu lên GitHub...');
-  try{
-    /* lấy sha nếu file đã tồn tại */
-    let sha = null;
-    const res0 = await fetch(ghUrl(), {headers:ghHeaders()});
-    if(res0.status === 200){ sha = (await res0.json()).sha; }
-    else if(res0.status !== 404){
-      throw new Error(res0.status === 401 ? 'Token không hợp lệ hoặc hết hạn.' :
-        'Không truy cập được repo (mã ' + res0.status + '). Kiểm tra tên đăng nhập/repo và quyền của token.');
-    }
-    const payload = {app:'so_do_bien_dem', version:2, saved_at:new Date().toISOString(),
-      event_date:fDate.value || '', data:data};
-    const body = {message:'Cập nhật sơ đồ ' + new Date().toLocaleString('vi-VN'),
-      content:toB64(JSON.stringify(payload, null, 2))};
-    if(sha) body.sha = sha;
-    const res = await fetch(ghUrl(), {method:'PUT', headers:ghHeaders(), body:JSON.stringify(body)});
-    if(!res.ok){
-      const err = await res.json().catch(() => ({}));
-      throw new Error('Lưu thất bại (mã ' + res.status + '). ' + (err.message || ''));
-    }
-    const t = new Date().toLocaleTimeString('vi-VN');
-    if(silent) flashStatus('✔ Đã lưu lên GitHub ' + t, 'ok');
-    else setStatus('✔ Đã lưu lên GitHub lúc ' + t, true);
-  }catch(err){
-    if(silent) flashStatus('⚠ Lưu tự động lỗi: ' + err.message, 'err', true);
-    else setStatus('Lỗi: ' + err.message, false);
-  }
-}
-
-/* tự động đẩy lên GitHub sau mỗi thay đổi (gộp các thay đổi trong 1.2 giây) */
-let pushTimer = null;
-function queueAutoPush(){
-  if(!ghReady()) return;
-  clearTimeout(pushTimer);
-  pushTimer = setTimeout(() => pushToGitHub(true), 1200);
-}
-
-async function pullFromGitHub(silent){
-  if(!silent) saveGhCfg();
-  if(!ghReady()){ if(!silent) setStatus('Vui lòng điền đủ Token, Tên đăng nhập và Tên repo.', false); return; }
-  if(!silent) setStatus('Đang tải từ GitHub...');
-  try{
-    const res = await fetch(ghUrl(), {headers:ghHeaders()});
-    if(res.status === 404){ if(!silent) setStatus('Chưa có dữ liệu trên repo này. Hãy bấm "Lưu lên GitHub" trước.', false); return; }
-    if(!res.ok) throw new Error(res.status === 401 ? 'Token không hợp lệ.' : 'Không tải được (mã ' + res.status + ').');
-    const obj = JSON.parse(fromB64((await res.json()).content));
-    const incoming = obj && obj.data ? obj.data : obj;
-    if(typeof incoming !== 'object' || incoming === null) throw new Error('File data.json sai định dạng.');
-    data = incoming;
-    if(obj.event_date){
-      fDate.value = obj.event_date;
-      try{ localStorage.setItem(KEY_DATE, obj.event_date); }catch(e){}
-    }
-    persist();
-    ROWS.forEach(r => { for(let c = 1; c <= COLS; c++) renderCell(r.name + c); });
-    renderSummary();
-    if(!silent) setStatus('✔ Đã tải dữ liệu về (lưu lần cuối: ' +
-      (obj.saved_at ? new Date(obj.saved_at).toLocaleString('vi-VN') : 'không rõ') + ')', true);
-  }catch(err){
-    if(!silent) setStatus('Lỗi: ' + err.message, false);
-  }
-}
-
-document.getElementById('btnPush').addEventListener('click', () => pushToGitHub(false));
-document.getElementById('btnPull').addEventListener('click', () => pullFromGitHub(false));
-
-/* ---- tự nạp dữ liệu cho MỌI người xem, không cần token ----
-   data.json nằm cùng repo với index.html nên GitHub Pages phục vụ nó
-   ngay cạnh trang web -> chỉ cần fetch tương đối. */
-function applyPayload(obj){
-  const incoming = obj && obj.data ? obj.data : obj;
-  if(typeof incoming !== 'object' || incoming === null) return false;
-  data = incoming;
-  if(obj.event_date){
-    fDate.value = obj.event_date;
-    try{ localStorage.setItem(KEY_DATE, obj.event_date); }catch(e){}
-  }
-  persist();
-  ROWS.forEach(r => { for(let c = 1; c <= COLS; c++) renderCell(r.name + c); });
-  renderSummary();
-  return true;
-}
-
-async function autoLoad(){
-  /* máy đã cấu hình token (máy quản lý): đọc qua API để luôn lấy bản mới nhất */
-  if(ghReady()){ pullFromGitHub(true); return; }
-  /* người xem: đọc data.json công khai cạnh trang, không cần token */
-  try{
-    const res = await fetch('data.json?t=' + Date.now(), {cache:'no-store'});
-    if(res.ok){
-      const obj = await res.json();
-      if(applyPayload(obj)) return;
-    }
-  }catch(e){ /* mở file cục bộ hoặc chưa có data.json -> dùng localStorage sẵn có */ }
-}
-autoLoad();
 
 /* ---- khởi tạo ---- */
-ROWS.forEach(r => { for(let c = 1; c <= COLS; c++) renderCell(r.name + c); });
-renderSummary();
+setAuthUI();
+renderAll();
 </script>
 </body>
 </html>
