@@ -56,9 +56,9 @@
     border:1px solid #6b5c3a; background:#12162a; color:var(--gold);
     font-weight:700; cursor:pointer;
   }
-  .datebox input[type=date]:disabled{opacity:.6; cursor:default;}
   .datebox input[type=date]:focus{outline:none; border-color:var(--gold);}
   .datebox input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.8) sepia(.6);}
+  .daybtn{padding:7px 10px; font-size:15px; line-height:1;}
   .userchip{font-size:12.5px; color:var(--leaf);}
 
   #autoStatus{
@@ -201,12 +201,14 @@
   </div>
   <div class="spacer"></div>
   <label class="datebox">Ngày tiệc
-    <input type="date" id="fDate" title="Chọn ngày của sơ đồ này" disabled>
+    <button class="btn-ghost daybtn" id="btnPrevDay" title="Ngày trước">◀</button>
+    <input type="date" id="fDate" title="Chọn ngày để xem sơ đồ của ngày đó">
+    <button class="btn-ghost daybtn" id="btnNextDay" title="Ngày sau">▶</button>
   </label>
   <span class="userchip" id="userChip"></span>
   <button class="btn-ghost" id="btnImport" hidden>📂 Nhập JSON</button>
   <input type="file" id="fileImport" accept=".json,application/json" hidden>
-  <button class="btn-ghost" id="btnClear" hidden>Xóa tất cả</button>
+  <button class="btn-ghost" id="btnClear" hidden>Xóa ngày này</button>
   <button class="btn-print" id="btnPrint">🖨 In sơ đồ</button>
   <button class="btn-ghost" id="btnAuth">Đăng nhập</button>
 </header>
@@ -295,15 +297,10 @@ const ROWS = [
 const COLS = 30;
 const ROW_BY_NAME = {}; ROWS.forEach(r => ROW_BY_NAME[r.name] = r);
 
-let data = {};          /* { "A1": {people, tables, stoves, beer, squid} } */
+let data = {};          /* dữ liệu của NGÀY đang xem: { "A1": {...} } */
 let currentUser = null;
-
-/* cache cục bộ để trang hiện ngay khi mở, trước khi Firebase trả về */
-const KEY_CACHE = 'seatmap_fb_cache';
-try{
-  const c = JSON.parse(localStorage.getItem(KEY_CACHE));
-  if(c && c.cells) data = c.cells;
-}catch(e){}
+let currentDate = '';   /* dạng "2026-07-24" — mỗi ngày một sơ đồ riêng */
+const KEY_LASTDATE = 'seatmap_last_date';
 
 /* ---- công thức gợi ý ---- */
 function suggestTables(p){
@@ -362,14 +359,11 @@ function renderCell(id){
   const a = cell.querySelector('.l2a');
   const b = cell.querySelector('.l2b');
   if(isBooked(d)){
-    /* dòng 1: số người · số bàn */
     const p1 = [];
     if(d.people) p1.push(d.people + ' người');
     if(d.tables) p1.push(d.tables + ' bàn');
     l1.textContent = p1.join(' · ');
-    /* dòng 2: số bếp */
     a.textContent = d.stoves ? d.stoves + ' bếp' : '';
-    /* dòng 3: bia · mực */
     const p3 = [];
     if(d.beer)  p3.push(d.beer + '🍺');
     if(d.squid) p3.push(d.squid + '🦑');
@@ -399,6 +393,7 @@ function totals(){
 function renderSummary(){
   const t = totals();
   document.getElementById('summary').innerHTML =
+    'Ngày <b>' + (displayDate() || '—') + '</b> &nbsp;·&nbsp; ' +
     'Vị trí đã đặt: <b>' + t.spots + '</b>/' + (ROWS.length * COLS) + ' &nbsp;·&nbsp; ' +
     'Tổng số người: <b>' + t.people + '</b> &nbsp;·&nbsp; ' +
     'Tổng số bàn: <b>' + t.tables + '</b> &nbsp;·&nbsp; ' +
@@ -419,28 +414,50 @@ function flashStatus(msg, cls, sticky){
 
 /* ---- Firebase ---- */
 const fDate = document.getElementById('fDate');
-let fb = null, dbRoot = null, auth = null;
+let auth = null, dbListener = null, dbListenerRef = null;
 const configOk = FIREBASE_API_KEY && FIREBASE_API_KEY.indexOf('DAN_') !== 0;
 
-if(configOk){
-  fb = firebase.initializeApp({apiKey:FIREBASE_API_KEY, databaseURL:FIREBASE_DB_URL});
-  dbRoot = firebase.database().ref('seatmap');
-  auth = firebase.auth();
+function dayRef(){
+  return firebase.database().ref('seatmaps/' + currentDate);
+}
+function cacheKey(){ return 'seatmap_fb_cache_' + currentDate; }
 
-  /* đồng bộ realtime: bất kỳ ai sửa gì, mọi màn hình cập nhật ngay */
-  dbRoot.on('value', snap => {
+/* chuyển sang xem/theo dõi một ngày khác */
+function attachDay(dateStr){
+  if(!dateStr) return;
+  currentDate = dateStr;
+  fDate.value = dateStr;
+  try{ localStorage.setItem(KEY_LASTDATE, dateStr); }catch(e){}
+
+  /* hiện ngay từ cache trong lúc chờ mạng */
+  data = {};
+  try{
+    const c = JSON.parse(localStorage.getItem(cacheKey()));
+    if(c && c.cells) data = c.cells;
+  }catch(e){}
+  renderAll();
+
+  if(!configOk) return;
+  /* gỡ listener ngày cũ, gắn listener ngày mới */
+  if(dbListenerRef && dbListener) dbListenerRef.off('value', dbListener);
+  dbListenerRef = dayRef();
+  dbListener = dbListenerRef.on('value', snap => {
     const v = snap.val() || {};
     data = v.cells || {};
-    if(v.event_date) fDate.value = v.event_date;
-    try{ localStorage.setItem(KEY_CACHE, JSON.stringify({cells:data, event_date:v.event_date||''})); }catch(e){}
+    try{ localStorage.setItem(cacheKey(), JSON.stringify({cells:data})); }catch(e){}
     renderAll();
   }, err => {
     flashStatus('⚠ Không kết nối được dữ liệu: ' + err.message, 'err', true);
   });
+}
 
+if(configOk){
+  firebase.initializeApp({apiKey:FIREBASE_API_KEY, databaseURL:FIREBASE_DB_URL});
+  auth = firebase.auth();
   auth.onAuthStateChanged(u => {
     currentUser = u;
     setAuthUI();
+    if(u) migrateLegacy();
   });
 }else{
   document.getElementById('configBanner').style.display = 'block';
@@ -450,13 +467,33 @@ if(configOk){
     '(lấy tại Firebase console → ⚙️ Project settings → General → Web API Key), rồi Commit.';
 }
 
+/* chuyển dữ liệu cũ (bản 1 ngày, nhánh "seatmap") sang cấu trúc mới "seatmaps/{ngày}"
+   — chạy 1 lần duy nhất khi quản trị viên đăng nhập */
+function migrateLegacy(){
+  const legacy = firebase.database().ref('seatmap');
+  legacy.once('value').then(snap => {
+    const v = snap.val();
+    if(!v || !v.cells) return;
+    const target = v.event_date || '2026-07-24';
+    const tref = firebase.database().ref('seatmaps/' + target + '/cells');
+    tref.once('value').then(tsnap => {
+      const done = () => legacy.remove();
+      if(tsnap.exists()){ done(); return; }
+      tref.set(v.cells).then(() => {
+        done();
+        flashStatus('✔ Đã chuyển dữ liệu cũ sang ngày ' + target, 'ok');
+        if(currentDate === target) attachDay(target);
+      });
+    });
+  }).catch(() => {});
+}
+
 function setAuthUI(){
   const on = !!currentUser;
   document.getElementById('btnAuth').textContent = on ? 'Đăng xuất' : 'Đăng nhập';
   document.getElementById('userChip').textContent = on ? '● ' + (currentUser.email || '') : '';
   document.getElementById('btnImport').hidden = !on;
   document.getElementById('btnClear').hidden = !on;
-  fDate.disabled = !on;
 }
 
 function requireLogin(){
@@ -469,14 +506,24 @@ function requireLogin(){
   return true;
 }
 
-/* ghi 1 ô lên Firebase */
+/* ghi 1 ô của ngày đang xem lên Firebase */
 function writeCell(id, d){
-  const ref = dbRoot.child('cells/' + id);
+  const ref = dayRef().child('cells/' + id);
   const op = d ? ref.set(d) : ref.remove();
   flashStatus('☁ Đang lưu...', '', true);
   op.then(() => flashStatus('✔ Đã lưu ' + new Date().toLocaleTimeString('vi-VN'), 'ok'))
     .catch(err => flashStatus('⚠ Lưu lỗi: ' + err.message, 'err', true));
 }
+
+/* ---- chọn ngày ---- */
+function shiftDay(delta){
+  const d = new Date(currentDate + 'T12:00:00');
+  d.setDate(d.getDate() + delta);
+  attachDay(d.toISOString().slice(0, 10));
+}
+fDate.addEventListener('change', () => { if(fDate.value) attachDay(fDate.value); });
+document.getElementById('btnPrevDay').addEventListener('click', () => shiftDay(-1));
+document.getElementById('btnNextDay').addEventListener('click', () => shiftDay(1));
 
 /* ---- hộp thoại nhập liệu ---- */
 const dlg = document.getElementById('dlg');
@@ -493,7 +540,7 @@ function onCellClick(id, row){
   currentId = id; currentRow = row;
   tablesEdited = false; stovesEdited = false;
   const d = data[id] || {};
-  document.getElementById('dlgTitle').textContent = 'Vị trí ' + id;
+  document.getElementById('dlgTitle').textContent = 'Vị trí ' + id + ' — ' + displayDate();
   document.getElementById('dlgPrice').textContent = row.desc;
   fPeople.value = d.people || '';
   fTables.value = d.tables || '';
@@ -541,14 +588,6 @@ dlg.addEventListener('keydown', e => {
   if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('btnSave').click(); }
 });
 
-/* ---- ngày tiệc ---- */
-fDate.addEventListener('change', () => {
-  if(!requireLogin()) return;
-  dbRoot.child('event_date').set(fDate.value)
-    .then(() => flashStatus('✔ Đã lưu ngày tiệc', 'ok'))
-    .catch(err => flashStatus('⚠ ' + err.message, 'err', true));
-});
-
 /* ---- đăng nhập / đăng xuất ---- */
 const dlgLogin = document.getElementById('dlgLogin');
 const lEmail = document.getElementById('lEmail');
@@ -589,7 +628,8 @@ dlgLogin.addEventListener('keydown', e => {
   if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('btnDoLogin').click(); }
 });
 
-/* ---- nhập JSON (chuyển dữ liệu cũ / danh sách đặt chỗ) ---- */
+/* ---- nhập JSON: nạp vào đúng ngày ghi trong file (event_date),
+        không có thì nạp vào ngày đang xem ---- */
 document.getElementById('btnImport').addEventListener('click', () => {
   document.getElementById('fileImport').click();
 });
@@ -602,17 +642,19 @@ document.getElementById('fileImport').addEventListener('change', e => {
       const obj = JSON.parse(reader.result);
       const incoming = obj && obj.data ? obj.data : obj;
       if(typeof incoming !== 'object' || incoming === null) throw new Error('sai định dạng');
-      /* tự bổ sung số bếp cho khu A-D nếu file cũ chưa có */
       Object.keys(incoming).forEach(k => {
         const d = incoming[k];
         const row = ROW_BY_NAME[k.charAt(0)];
         if(d && row && !d.stoves) d.stoves = suggestStoves(d.people || 0, row.grill);
       });
-      const payload = {cells:incoming};
-      if(obj.event_date) payload.event_date = obj.event_date;
-      flashStatus('☁ Đang nạp lên...', '', true);
-      dbRoot.update(payload)
-        .then(() => flashStatus('✔ Đã nạp ' + Object.keys(incoming).length + ' vị trí từ ' + file.name, 'ok'))
+      const target = (obj.event_date && /^\d{4}-\d{2}-\d{2}$/.test(obj.event_date))
+        ? obj.event_date : currentDate;
+      flashStatus('☁ Đang nạp lên ngày ' + target + '...', '', true);
+      firebase.database().ref('seatmaps/' + target + '/cells').update(incoming)
+        .then(() => {
+          flashStatus('✔ Đã nạp ' + Object.keys(incoming).length + ' vị trí vào ngày ' + target, 'ok');
+          if(target !== currentDate) attachDay(target);
+        })
         .catch(err => flashStatus('⚠ ' + err.message, 'err', true));
     }catch(err){
       alert('File không đúng định dạng JSON của sơ đồ này.');
@@ -622,20 +664,20 @@ document.getElementById('fileImport').addEventListener('change', e => {
   e.target.value = '';
 });
 
-/* ---- xóa tất cả ---- */
+/* ---- xóa toàn bộ ngày đang xem ---- */
 document.getElementById('btnClear').addEventListener('click', () => {
   if(!requireLogin()) return;
-  if(confirm('Xóa toàn bộ dữ liệu trên tất cả các vị trí?')){
-    dbRoot.child('cells').remove()
-      .then(() => flashStatus('✔ Đã xóa toàn bộ', 'ok'))
+  if(confirm('Xóa toàn bộ dữ liệu của ngày ' + displayDate() + '? (các ngày khác không bị ảnh hưởng)')){
+    dayRef().child('cells').remove()
+      .then(() => flashStatus('✔ Đã xóa dữ liệu ngày ' + displayDate(), 'ok'))
       .catch(err => flashStatus('⚠ ' + err.message, 'err', true));
   }
 });
 
 /* ---- bố cục in: 2 khối 15 cột ---- */
 function displayDate(){
-  if(!fDate.value) return '';
-  const parts = fDate.value.split('-');
+  if(!currentDate) return '';
+  const parts = currentDate.split('-');
   return parts[2] + '/' + parts[1] + '/' + parts[0];
 }
 function buildPrintArea(){
@@ -692,9 +734,14 @@ document.getElementById('btnPrint').addEventListener('click', () => {
   window.print();
 });
 
-/* ---- khởi tạo ---- */
+/* ---- khởi tạo: mở ngày xem lần trước, không có thì hôm nay ---- */
+let startDate = '';
+try{ startDate = localStorage.getItem(KEY_LASTDATE) || ''; }catch(e){}
+if(!/^\d{4}-\d{2}-\d{2}$/.test(startDate)){
+  startDate = new Date().toISOString().slice(0, 10);
+}
 setAuthUI();
-renderAll();
+attachDay(startDate);
 </script>
 </body>
 </html>
