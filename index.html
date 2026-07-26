@@ -174,38 +174,38 @@
   /* ===== In ấn: A4 ngang, máy in đen trắng ===== */
   #printArea{display:none;}
   @media print{
-    @page{size:A4 landscape; margin:7mm;}
+    @page{size:A4 landscape; margin:6mm;}
     body{background:#fff !important; color:#000; display:block;}
     header, .summary, main, dialog, #autoStatus, #configBanner, .notebox{display:none !important;}
     #printArea{display:block; font-family:Arial, "Segoe UI", sans-serif; color:#000;}
 
-    .p-head{display:flex; align-items:baseline; gap:14px; margin-bottom:2mm;}
-    .p-head h1{font-size:13pt; letter-spacing:.5px; text-transform:uppercase;}
-    .p-head .p-legend{font-size:8pt; color:#333;}
-    .p-summary{font-size:9pt; margin-bottom:2.5mm;}
-    .p-summary b{font-size:10pt;}
+    .p-head{display:flex; align-items:baseline; gap:14px; margin-bottom:1.5mm;}
+    .p-head h1{font-size:12.5pt; letter-spacing:.5px; text-transform:uppercase;}
+    .p-head .p-legend{font-size:7.5pt; color:#333;}
+    .p-summary{font-size:8.5pt; margin-bottom:1.5mm;}
+    .p-summary b{font-size:9.5pt;}
     .p-note{
-      font-size:9pt; margin-bottom:2.5mm; padding:1.5mm 3mm;
+      font-size:8.5pt; margin-bottom:1.5mm; padding:1mm 3mm;
       border:0.3mm solid #999; border-radius:1mm; background:#f5f5f5;
-      white-space:pre-wrap;
+      white-space:pre-wrap; page-break-inside:avoid; break-inside:avoid;
     }
     .p-note b{color:#000;}
 
-    .p-block{margin-bottom:3mm;}
-    .p-block-title{font-size:8.5pt; font-weight:700; color:#333; margin-bottom:1mm;
+    .p-block{margin-bottom:2mm; page-break-inside:avoid; break-inside:avoid;}
+    .p-block-title{font-size:8pt; font-weight:700; color:#333; margin-bottom:0.8mm;
       text-transform:uppercase; letter-spacing:.5px;}
     .p-grid{
       display:grid;
       grid-template-columns:7mm repeat(15, 1fr);
-      gap:1mm;
+      gap:0.8mm;
     }
     .p-rowlabel{
       display:flex; align-items:center; justify-content:center;
-      font-size:12pt; font-weight:800;
+      font-size:11pt; font-weight:800;
     }
     .p-cell{
       border:0.4mm solid #000; border-radius:1mm;
-      min-height:12.5mm; padding:0.6mm 1mm;
+      min-height:11mm; padding:0.5mm 1mm;
       position:relative; overflow:hidden;
       -webkit-print-color-adjust:exact; print-color-adjust:exact;
       display:flex; flex-direction:column; justify-content:center; gap:0;
@@ -213,10 +213,10 @@
     .p-cell.g{background:#e6e6e6; border-width:0.25mm;}
     .p-cell .p-num{
       position:absolute; top:0.4mm; left:0.9mm;
-      font-size:6.5pt; font-weight:700; color:#000;
+      font-size:6pt; font-weight:700; color:#000;
     }
-    .p-cell .p-people{font-size:8.5pt; font-weight:800; text-align:center; line-height:1.1;}
-    .p-cell .p-extra{font-size:6.5pt; text-align:center; line-height:1.15; color:#111;}
+    .p-cell .p-people{font-size:8pt; font-weight:800; text-align:center; line-height:1.05;}
+    .p-cell .p-extra{font-size:6pt; text-align:center; line-height:1.1; color:#111;}
     .p-cell.empty .p-num{color:#777; font-weight:400;}
   }
 </style>
