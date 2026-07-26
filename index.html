@@ -315,19 +315,21 @@ let currentDate = '';   /* dạng "2026-07-24" — mỗi ngày một sơ đồ r
 const KEY_LASTDATE = 'seatmap_last_date';
 
 /* ---- công thức gợi ý ----
-   Bảng quy đổi theo số người (1-10), lặp lại theo chu kỳ 10 cho nhóm đông hơn:
-   1-3 người: 1 bàn, 1 bếp   ·  4 người: 2 bàn, 1 bếp
-   5 người:   2 bàn, 2 bếp   ·  6-7 người: 3 bàn, 2 bếp
-   8-10 người: 4 bàn, 3 bếp                                */
-const TABLES_BY_PEOPLE = [0,1,1,1,2,2,3,3,4,4,4]; /* chỉ số 0..10 */
-const STOVES_BY_PEOPLE = [0,1,1,1,1,2,2,2,3,3,3]; /* chỉ số 0..10 */
+   Cập nhật theo yêu cầu mới (giữ nguyên các mức không được yêu cầu đổi):
+   1 người: 1 bàn, 1 bếp   ·  2 người: 1 bàn, 1 bếp
+   3 người: 2 bàn, 1 bếp   ·  4 người: 2 bàn, 2 bếp
+   5 người: 3 bàn, 2 bếp   ·  6 người: 4 bàn, 3 bếp
+   7 người: 4 bàn, 4 bếp   ·  8 người: 4 bàn, 3 bếp (giữ nguyên)
+   9 người: 4 bàn, 3 bếp (giữ nguyên)  ·  10 người: 6 bàn, 3 bếp (bếp giữ nguyên)  */
+const TABLES_BY_PEOPLE = [0,1,1,2,2,3,4,4,4,4,6]; /* chỉ số 0..10 */
+const STOVES_BY_PEOPLE = [0,1,1,1,2,2,3,4,3,3,3]; /* chỉ số 0..10 */
 
 function suggestTables(p){
   if(!p || p <= 0) return 0;
   if(p <= 10) return TABLES_BY_PEOPLE[p];
   const full = Math.floor((p - 1) / 10);
   const rem  = p - full * 10;
-  return full * 4 + TABLES_BY_PEOPLE[rem];
+  return full * TABLES_BY_PEOPLE[10] + TABLES_BY_PEOPLE[rem];
 }
 /* chỉ tính bếp cho khu A-D có bếp nướng */
 function suggestStoves(p, grill){
@@ -335,7 +337,7 @@ function suggestStoves(p, grill){
   if(p <= 10) return STOVES_BY_PEOPLE[p];
   const full = Math.floor((p - 1) / 10);
   const rem  = p - full * 10;
-  return full * 3 + STOVES_BY_PEOPLE[rem];
+  return full * STOVES_BY_PEOPLE[10] + STOVES_BY_PEOPLE[rem];
 }
 
 /* ---- dựng lưới ---- */
