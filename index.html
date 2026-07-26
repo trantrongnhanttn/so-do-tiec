@@ -82,6 +82,31 @@
   }
   .summary b{color:var(--gold); font-size:17px;}
 
+  /* ===== Ghi chú dưới sơ đồ ===== */
+  .notebox{
+    margin:0 20px 14px; padding:10px 16px;
+    border:1px solid #6b5c3a; border-radius:10px;
+    background:rgba(18,22,42,.55);
+  }
+  .notebox-head{
+    display:flex; align-items:center; justify-content:space-between;
+    font-size:13px; color:var(--gold); font-weight:700; margin-bottom:4px;
+  }
+  .notebox-head button{padding:5px 10px; font-size:12px;}
+  .notebox-view{
+    font-size:14px; color:var(--ink); white-space:pre-wrap; line-height:1.5;
+    min-height:1.3em;
+  }
+  .notebox-view:empty::before{content:'Chưa có ghi chú.'; color:#8f866f; font-style:italic;}
+  .notebox-edit textarea{
+    width:100%; padding:9px 11px; border-radius:8px; resize:vertical;
+    border:1px solid #4a4a5a; background:#12162a; color:var(--ink);
+    font:inherit; font-size:14px;
+  }
+  .notebox-edit textarea:focus{outline:none; border-color:var(--gold);}
+  .notebox-edit .dlg-actions{margin-top:8px;}
+  .notebox-edit .btn-print{flex:0 0 auto; padding:8px 16px;}
+
   /* ===== Lưới bàn ===== */
   main{flex:1; overflow:auto; padding:0 12px 20px;}
   .grid{
@@ -151,7 +176,7 @@
   @media print{
     @page{size:A4 landscape; margin:7mm;}
     body{background:#fff !important; color:#000; display:block;}
-    header, .summary, main, dialog, #autoStatus, #configBanner{display:none !important;}
+    header, .summary, main, dialog, #autoStatus, #configBanner, .notebox{display:none !important;}
     #printArea{display:block; font-family:Arial, "Segoe UI", sans-serif; color:#000;}
 
     .p-head{display:flex; align-items:baseline; gap:14px; margin-bottom:2mm;}
@@ -159,6 +184,12 @@
     .p-head .p-legend{font-size:8pt; color:#333;}
     .p-summary{font-size:9pt; margin-bottom:2.5mm;}
     .p-summary b{font-size:10pt;}
+    .p-note{
+      font-size:9pt; margin-bottom:2.5mm; padding:1.5mm 3mm;
+      border:0.3mm solid #999; border-radius:1mm; background:#f5f5f5;
+      white-space:pre-wrap;
+    }
+    .p-note b{color:#000;}
 
     .p-block{margin-bottom:3mm;}
     .p-block-title{font-size:8.5pt; font-weight:700; color:#333; margin-bottom:1mm;
@@ -216,6 +247,21 @@
 <div class="summary" id="summary"></div>
 
 <main><div class="grid" id="grid"></div></main>
+
+<div class="notebox" id="noteBox">
+  <div class="notebox-head">
+    <span>📝 Ghi chú</span>
+    <button class="btn-ghost" id="btnNoteEdit" hidden>Sửa ghi chú</button>
+  </div>
+  <div class="notebox-view" id="noteView"></div>
+  <div class="notebox-edit" id="noteEdit" hidden>
+    <textarea id="noteInput" rows="2" placeholder="VD: E22, E23 ngồi chung với B19, B20"></textarea>
+    <div class="dlg-actions">
+      <button class="btn-print" id="btnNoteSave">Lưu ghi chú</button>
+      <button class="btn-ghost" id="btnNoteCancel">Hủy</button>
+    </div>
+  </div>
+</div>
 
 <div id="autoStatus"></div>
 <div id="printArea"></div>
@@ -423,6 +469,40 @@ function renderSummary(){
     'Mực: <b>' + t.squid + '</b> set';
 }
 
+/* ---- ghi chú dưới sơ đồ (riêng theo từng đêm) ---- */
+const noteView = document.getElementById('noteView');
+const noteEdit = document.getElementById('noteEdit');
+const noteInput = document.getElementById('noteInput');
+const btnNoteEdit = document.getElementById('btnNoteEdit');
+
+function renderNote(){
+  noteView.textContent = currentNote || '';
+  noteEdit.hidden = true;
+  noteView.hidden = false;
+  btnNoteEdit.hidden = !currentUser;
+}
+btnNoteEdit.addEventListener('click', () => {
+  if(!requireLogin()) return;
+  noteInput.value = currentNote || '';
+  noteView.hidden = true;
+  noteEdit.hidden = false;
+  noteInput.focus();
+});
+document.getElementById('btnNoteCancel').addEventListener('click', () => {
+  noteEdit.hidden = true;
+  noteView.hidden = false;
+});
+document.getElementById('btnNoteSave').addEventListener('click', () => {
+  if(!requireLogin()) return;
+  const val = noteInput.value.trim();
+  currentNote = val;
+  renderNote();
+  flashStatus('☁ Đang lưu...', '', true);
+  dayRef().child('note').set(val || null)
+    .then(() => flashStatus('✔ Đã lưu ghi chú', 'ok'))
+    .catch(err => flashStatus('⚠ Lưu lỗi: ' + err.message, 'err', true));
+});
+
 /* ---- thông báo góc phải ---- */
 const autoStatus = document.getElementById('autoStatus');
 let statusTimer = null;
@@ -443,6 +523,8 @@ function dayRef(){
 }
 function cacheKey(){ return 'seatmap_fb_cache_' + currentDate; }
 
+let currentNote = '';
+
 /* chuyển sang xem/theo dõi một ngày khác */
 function attachDay(dateStr){
   if(!dateStr) return;
@@ -452,11 +534,14 @@ function attachDay(dateStr){
 
   /* hiện ngay từ cache trong lúc chờ mạng */
   data = {};
+  currentNote = '';
   try{
     const c = JSON.parse(localStorage.getItem(cacheKey()));
     if(c && c.cells) data = c.cells;
+    if(c && c.note) currentNote = c.note;
   }catch(e){}
   renderAll();
+  renderNote();
 
   if(!configOk) return;
   /* gỡ listener ngày cũ, gắn listener ngày mới */
@@ -465,8 +550,10 @@ function attachDay(dateStr){
   dbListener = dbListenerRef.on('value', snap => {
     const v = snap.val() || {};
     data = v.cells || {};
-    try{ localStorage.setItem(cacheKey(), JSON.stringify({cells:data})); }catch(e){}
+    currentNote = v.note || '';
+    try{ localStorage.setItem(cacheKey(), JSON.stringify({cells:data, note:currentNote})); }catch(e){}
     renderAll();
+    renderNote();
   }, err => {
     flashStatus('⚠ Không kết nối được dữ liệu: ' + err.message, 'err', true);
   });
@@ -515,6 +602,8 @@ function setAuthUI(){
   document.getElementById('userChip').textContent = on ? '● ' + (currentUser.email || '') : '';
   document.getElementById('btnImport').hidden = !on;
   document.getElementById('btnClear').hidden = !on;
+  const btnNE = document.getElementById('btnNoteEdit');
+  if(btnNE) btnNE.hidden = !on;
 }
 
 function requireLogin(){
@@ -733,6 +822,13 @@ function buildPrintArea(){
     return h + '</div></div>';
   }
 
+  function escapeHtml(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  const noteHtml = currentNote
+    ? '<div class="p-note">📝 <b>Ghi chú:</b> ' + escapeHtml(currentNote) + '</div>'
+    : '';
+
   area.innerHTML =
     '<div class="p-head">' +
       '<h1>Sơ đồ Dạ Tiệc Ánh Sáng Biển Đêm' +
@@ -748,6 +844,7 @@ function buildPrintArea(){
       ' &nbsp;·&nbsp; Bia: <b>' + t.beer + '</b> lon' +
       ' &nbsp;·&nbsp; Mực: <b>' + t.squid + '</b> set' +
     '</div>' +
+    noteHtml +
     block(1, 15) + block(16, 30);
 }
 window.addEventListener('beforeprint', buildPrintArea);
